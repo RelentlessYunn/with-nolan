@@ -308,15 +308,28 @@ void main(){
      Far behind home: going back to them is flying back the way the opening came. Each one is a
      sight of its own (its sphere and a little of its air) */
   const EARTH_P=[-21,13,-392], EARTH_R=15, MOON_P=[22,-16,-350], MOON_R=4.5;
+  const swap={};                                       /* when each real picture arrived (to fade it in) */
   const earth={id:"earth",early:true,
     /* its pictures start loading at once: the first flight begins beside it */
-    layout(api){ ["earth-day.jpg","earth-aux.jpg","moon.jpg"].forEach(n=>api.image(IMG(n))); },
-    sights:[{id:"earth",p:EARTH_P,R:EARTH_R*1.05,k:.92},{id:"moon",p:MOON_P,R:MOON_R*1.02,k:.86}],
+    layout(api){ ["earth-day.jpg","earth-aux.jpg","moon.jpg"].concat(api.phone?[]:["moon-4k.jpg"]).forEach(n=>api.image(IMG(n))); },
+    /* solid: flights go round them (universe.js), never through */
+    solids:[{p:EARTH_P,R:EARTH_R},{p:MOON_P,R:MOON_R}],
+    sights:[{id:"earth",p:EARTH_P,R:EARTH_R*1.05,k:.92},{id:"moon",p:MOON_P,R:MOON_R*1.02,k:.62}],
     shaders:{main:COMMON+N3+`
 uniform vec3 uL;      /* where the sunlight comes from */
 uniform float uSpin;
 uniform sampler2D uDay, uAux;  /* the real Earth (NASA's Blue Marble), and its night lights, seas and heights */
 uniform float uTex, uLod;      /* whether they are here; how blurred to read them (the Earth's size on the screen) */
+/* a real ball, traced per pixel: the ray of this pixel from the camera, against a sphere (its centre in the
+   camera's axes, x right, y down, z ahead; its radius). Seen up close or off to the side it keeps its true
+   shape, and the camera can fly right past it */
+uniform vec3 uCen; uniform float uRad; uniform vec4 uView;   /* (render width, height, css width, focal length in css px) */
+vec3 rayD(){ float k=uView.z/uView.x; vec2 c=vec2(gl_FragCoord.x,uView.y-gl_FragCoord.y)*k;
+  return normalize(vec3((c.x-uView.z*.5)/uView.w,(c.y-uView.y*k*.5)/uView.w,1.)); }
+/* how close (in its radii) the ray passes its centre, the direction from the centre to that point, and b: how far ahead */
+float pass(vec3 d,out vec3 off,out float b){ vec3 c=uCen/uRad; b=dot(d,c); vec3 cl=d*b-c; float rr=length(cl); off=cl/max(rr,1e-5); return b>0.?rr:1e3; }
+vec3 hitN(vec3 d,float rr,float b){ float r1=min(rr,.9999); return normalize(d*(b-sqrt(1.-r1*r1))-uCen/uRad); }
+
 /* turned about its axis (by a), then its axis leant 23° */
 vec3 turnS(vec3 n,float a){ float c=cos(a), s=sin(a); vec3 m=vec3(c*n.x+s*n.z,n.y,-s*n.x+c*n.z);
   float t=.41, ct=cos(t), st=sin(t); return vec3(ct*m.x-st*m.y,st*m.x+ct*m.y,m.z); }
@@ -337,18 +350,18 @@ float ground(vec3 s){
   return fbm3(s*1.5+w*1.3+uS,6)+.05*fbm3(s*11.,3);
 }
 void main(){
-  vec2 p=vQ*1.14; float r2=dot(p,p), rr=sqrt(r2);
+  vec3 d=rayD(), off; float b, rr=pass(d,off,b);
   vec3 C=vec3(0.); float a=0.;
   vec3 L=normalize(uL);
-  if(r2<1.){
-    vec3 n=vec3(p.x,p.y,-sqrt(1.-r2)), s=turnS(n,uSpin);
+  if(rr<1.){
+    vec3 n=hitN(d,rr,b), s=turnS(n,uSpin);
     float mu=dot(n,L), day=smoothstep(-.08,.14,mu);
     float lat=abs(s.y), landM, rmu=mu, lights=0., ice=0., desert=0.;
     vec3 surf;
     if(uTex>.5){
       /* the real one: its colours by day, its cities by night, where its seas are, and its heights */
       vec2 uv=vec2(.5+atan(s.x,-s.z)/6.2831853,.5+asin(clamp(s.y,-1.,1.))/3.1415927);
-      float lod=uLod+.5*log2(1./max(-n.z,.1));                        /* blurrier where it is seen slantwise */
+      float lod=uLod+.5*log2(1./max(dot(n,-d),.1));                   /* blurrier where it is seen slantwise */
       surf=pow(textureLod(uDay,uv,lod).rgb,vec3(2.2))*.95;
       vec3 ax=textureLod(uAux,uv,lod).rgb;
       landM=1.-smoothstep(.3,.7,ax.g);
@@ -397,7 +410,7 @@ void main(){
     float shade=1.-.45*cloudAt(turnS(normalize(n+L*.01),uSpin*1.18+uT*.004));
     vec3 dayC=mix(surf*shade*(sunL*1.2+.015),vec3(.96,.97,1.)*(max(mu,0.)*1.2+.015),cl)*sunC;
     /* the Sun's glint on the sea: a sharp spot in a wider sheen, hidden under clouds */
-    vec3 v=vec3(0.,0.,-1.), hv=normalize(L+v); float nh=max(dot(n,hv),0.);
+    vec3 v=-d, hv=normalize(L+v); float nh=max(dot(n,hv),0.);
     dayC+=vec3(1.,.9,.75)*(pow(nh,900.)*.7+pow(nh,70.)*.05)*(1.-landM)*(1.-cl)*day;
     /* the night side: nearly black, the clouds faintly seen by the Moon */
     vec3 nightC=(surf*.03+vec3(.015,.02,.04)*cl)*(1.-day);
@@ -408,13 +421,13 @@ void main(){
     nightC+=mix(vec3(.25,1.,.55),vec3(.95,.25,.45),smoothstep(.87,.91,lat))*ring*ray*(1.-day)*.6;
     C=dayC+nightC; a=1.;
     /* the air seen through: a blue haze, thicker towards the edge, over the day side */
-    float thick=pow(1.-max(-n.z,0.),2.6);
+    float thick=pow(1.-max(dot(n,-d),0.),2.6);
     C=mix(C,vec3(.32,.55,1.)*smoothstep(-.2,.35,mu)*.8,thick*.55);
   }
   /* its thin air beyond the edge: blue where the Sun shines through, warm at the dusk line, a thread over the night */
   float out_=max(rr-1.,0.);
   float limb=exp(-out_*45.)*smoothstep(.975,1.,rr)+exp(-abs(rr-1.)*70.)*.35;
-  float side=dot(normalize(vec3(p,-.3)),L);
+  float side=dot(normalize(off-.3*normalize(uCen)),L);
   vec3 air=mix(vec3(1.,.5,.25),vec3(.35,.6,1.),smoothstep(-.05,.35,side));
   C+=air*limb*smoothstep(-.3,.2,side)*1.1;
   a=max(a,limb*smoothstep(-.3,.2,side)*.7);
@@ -422,6 +435,17 @@ void main(){
 }`,moon:COMMON+N3+`
 uniform vec3 uL;
 uniform sampler2D uMoonT; uniform float uTex, uLod;
+uniform float uQ;     /* how far its north is turned from straight up tonight (the parallactic angle) */
+/* a real ball, traced per pixel: the ray of this pixel from the camera, against a sphere (its centre in the
+   camera's axes, x right, y down, z ahead; its radius). Seen up close or off to the side it keeps its true
+   shape, and the camera can fly right past it */
+uniform vec3 uCen; uniform float uRad; uniform vec4 uView;   /* (render width, height, css width, focal length in css px) */
+vec3 rayD(){ float k=uView.z/uView.x; vec2 c=vec2(gl_FragCoord.x,uView.y-gl_FragCoord.y)*k;
+  return normalize(vec3((c.x-uView.z*.5)/uView.w,(c.y-uView.y*k*.5)/uView.w,1.)); }
+/* how close (in its radii) the ray passes its centre, the direction from the centre to that point, and b: how far ahead */
+float pass(vec3 d,out vec3 off,out float b){ vec3 c=uCen/uRad; b=dot(d,c); vec3 cl=d*b-c; float rr=length(cl); off=cl/max(rr,1e-5); return b>0.?rr:1e3; }
+vec3 hitN(vec3 d,float rr,float b){ float r1=min(rr,.9999); return normalize(d*(b-sqrt(1.-r1*r1))-uCen/uRad); }
+
 /* a field of craters: cells of a 3D grid (s cells per unit), each holding at most one crater, at a
    random place and of a random size. h: the height (a bowl, a raised rim fading outwards), g: its
    slope (to shade the relief), br: how fresh (a few young craters are bright inside) */
@@ -453,14 +477,18 @@ float rays(vec3 n,vec3 c,float reach,float sd){
   return st*exp(-d/reach)*smoothstep(.015,.06,d)+exp(-d*d/.0004)*1.2;
 }
 void main(){
-  vec2 p=vQ*1.03; float r2=dot(p,p);
-  if(r2>=1.){ o=vec4(0.); return; }
-  vec3 n=vec3(p.x,p.y,-sqrt(1.-r2)), L=normalize(uL);
+  vec3 d=rayD(), off; float b, rr=pass(d,off,b);
+  float aa=max(fwidth(rr),1e-3);
+  if(rr>1.+aa){ o=vec4(0.); return; }
+  vec3 n=hitN(d,rr,b), L=normalize(uL);
+  /* everything turned about the line of sight, so its north points where it does in tonight's sky */
+  float cq=cos(uQ), sq=sin(uQ);
+  n=vec3(cq*n.x+sq*n.y,-sq*n.x+cq*n.y,n.z); d=vec3(cq*d.x+sq*d.y,-sq*d.x+cq*d.y,d.z); L=vec3(cq*L.x+sq*L.y,-sq*L.x+cq*L.y,L.z);
   vec3 nb, tint; float alb;
   if(uTex>.5){
     /* the real one (NASA's Lunar Reconnaissance Orbiter): its near side, which always faces the Earth */
     vec2 uv=vec2(.5+atan(n.x,-n.z)/6.2831853,.5+asin(clamp(n.y,-1.,1.))/3.1415927);
-    float lod=uLod+.5*log2(1./max(-n.z,.1));
+    float lod=uLod+.5*log2(1./max(dot(n,-d),.1));
     vec3 tx=textureLod(uMoonT,uv,lod).rgb;
     alb=pow(tx.r,2.2)*1.35+.015;
     vec2 dp=exp2(max(lod,0.))*vec2(1./2048.,1./1024.);
@@ -486,10 +514,10 @@ void main(){
   tint=mix(vec3(.98,.95,.9),vec3(.86,.9,.96),maria*(.6+.4*fbm3(n*4.+9.,3)));
   }
   /* how the Moon reflects: nearly as bright at its edge as in its middle (Lommel–Seeliger), not like a matte ball */
-  float ci=dot(nb,L), ce=max(-n.z,.05);
+  float ci=dot(nb,L), ce=max(dot(n,-d),.05);
   float lit=max(ci,0.)/(max(ci,0.)+ce)*2., term=smoothstep(-.03,.05,dot(n,L));
   vec3 C=tint*alb*lit*term*1.05+vec3(.35,.45,.7)*.03*alb*(1.-term);   /* earthshine on the dark side */
-  float e=smoothstep(1.,.985,sqrt(r2));
+  float e=1.-smoothstep(1.-aa,1.+aa,rr);
   o=vec4(C*uA*e,e*uA);
 }`},
     draw(api,ph,t){
@@ -497,31 +525,68 @@ void main(){
       api0=api;
       const a=api.appear(earth);
       /* how blurred to read a map of 2048 texels round, for a ball of this many pixels across */
-      const lodFor=r=>Math.log2(2048/TAU/Math.max(1,r*api.scale));
+      const lodFor=(r,size)=>Math.log2(size/TAU/Math.max(1,r*api.scale));
+      /* a ball on the screen: the square that holds it (and its air), or the whole screen when the camera is
+         right beside it (part of it may be behind the camera); null when it is not in view at all */
+      const ball=(P,R,air)=>{
+        const q=api.toCam(P), dist=Math.hypot(q[0],q[1],q[2]), Ra=R*air;
+        if(dist<R*1.002) return null;                               /* (inside it: never, the flights go round) */
+        const r=api.F*R/Math.max(1e-3,Math.sqrt(Math.max(1e-6,dist*dist-R*R)));   /* its true size on the screen */
+        const view={q,dist,r,d:q[2]};
+        if(q[2]>Ra*1.4){
+          const x=api.W/2+q[0]*api.F/q[2], y=api.H/2+q[1]*api.F/q[2], h=api.F*Ra/(q[2]-Ra)*1.02;
+          if(x+h<0||y+h<0||x-h>api.W||y-h>api.H) return null;
+          return Object.assign(view,{x,y,h});
+        }
+        if(q[2]<-Ra) return null;                                   /* all of it behind the camera */
+        return Object.assign(view,{x:api.W/2,y:api.H/2,h:Math.max(api.W,api.H),full:true});
+      };
+      const place=(u,v,R)=>{ const V=api.view(); set(u,"uCen",v.q[0],v.q[1],v.q[2]); set(u,"uRad",R); set(u,"uView",V[0],V[1],V[2],V[3]); };
+      /* a picture that arrives while the ball is on screen fades in over what was there (never a jump) */
+      const now=performance.now(), mix=k=>Math.min(1,Math.max(0,(now-k)/1200));
       const drawEarth=e=>{
-        const u=api.sprite(earth.prog.main,e.x,e.y,e.r*1.14,e.r*1.14,0);
-        set(u,"uL",.72,-.3,-.62); set(u,"uSpin",t*.05); set(u,"uT",t); set(u,"uA",a); set(u,"uS",3.7);
-        const td=api.image(IMG("earth-day.jpg")), ta=api.image(IMG("earth-aux.jpg"));
-        if(td&&ta){ api.bind(4,td); api.bind(5,ta); api.gl.uniform1i(u.uDay,4); api.gl.uniform1i(u.uAux,5); }
-        set(u,"uTex",td&&ta?1:0); set(u,"uLod",lodFor(e.r));
-        api.over(); api.draw();
+        const td=api.image(IMG("earth-day.jpg")), ta=api.image(IMG("earth-aux.jpg")), real=!!(td&&ta);
+        if(real&&!swap.earth) swap.earth=swap.earthSeen?now:-1e9;      /* (ready before it was ever seen: nothing to fade) */
+        swap.earthSeen=true;
+        const k=real?mix(swap.earth):0;
+        const one=(tex,alpha)=>{
+          const u=api.sprite(earth.prog.main,e.x,e.y,e.h,e.h,0);
+          place(u,e,EARTH_R);
+          set(u,"uL",.72,-.3,-.62); set(u,"uSpin",t*.05); set(u,"uT",t); set(u,"uA",alpha); set(u,"uS",3.7);
+          if(tex){ api.bind(4,td); api.bind(5,ta); api.gl.uniform1i(u.uDay,4); api.gl.uniform1i(u.uAux,5); }
+          set(u,"uTex",tex?1:0); set(u,"uLod",lodFor(e.r,2048));
+          api.over(); api.draw();
+        };
+        if(real) one(true,a);
+        if(k<1){ one(false,a*(1-k)); api.need(); }
       };
       const drawMoon=m=>{
-        /* lit as it is tonight: the angle between the Sun and the Moon, seen from here */
-        const ph0=typeof Astro!=="undefined"&&Astro.moon?Astro.moon(new Date()).phase:.25, th=ph0*TAU;
-        const u=api.sprite(earth.prog.moon,m.x,m.y,m.r*1.03,m.r*1.03,0);
-        set(u,"uL",Math.sin(th),-.05,Math.cos(th)); set(u,"uA",a); set(u,"uT",t);
-        const tm=api.image(IMG("moon.jpg"));
-        if(tm){ api.bind(4,tm); api.gl.uniform1i(u.uMoonT,4); }
-        set(u,"uTex",tm?1:0); set(u,"uLod",lodFor(m.r));
-        api.over(); api.draw();
+        /* as it hangs in tonight's sky over Getafe: lit from where the Sun is (its phase, and which edge is
+           bright), and turned as it stands in the sky (Astro.moonSky); up on the screen is up in the sky */
+        const sky=typeof Astro!=="undefined"&&Astro.moonSky?Astro.moonSky(new Date(),40.305,-3.731):{inc:Math.PI/2,chi:-Math.PI/2,q:0};
+        const w=sky.q-sky.chi, si=Math.sin(sky.inc);
+        /* the sharper map on a computer (a phone keeps the lighter one); each one fades in over the last */
+        const big=!api.phone&&api.image(IMG("moon-4k.jpg")), small=api.image(IMG("moon.jpg")), tm=big||small;
+        if(tm!==swap.moonT){ swap.moonPrev=swap.moonT||null; swap.moonT=tm; swap.moon=swap.moonSeen?now:-1e9; }
+        swap.moonSeen=true;
+        const k=mix(swap.moon);
+        const one=(tex,size,alpha)=>{
+          const u=api.sprite(earth.prog.moon,m.x,m.y,m.h,m.h,0);
+          place(u,m,MOON_R);
+          set(u,"uL",Math.sin(w)*si,-Math.cos(w)*si,-Math.cos(sky.inc)); set(u,"uQ",sky.q); set(u,"uA",alpha); set(u,"uT",t);
+          if(tex){ api.bind(4,tex); api.gl.uniform1i(u.uMoonT,4); }
+          set(u,"uTex",tex?1:0); set(u,"uLod",lodFor(m.r,size));
+          api.over(); api.draw();
+        };
+        one(tm,big?4096:2048,a);
+        if(k<1&&swap.moon){ one(swap.moonPrev,2048,a*(1-k)); api.need(); }
       };
       /* the farther one first, so the nearer one covers it where they meet on the screen */
-      const e=spot(api,EARTH_P,EARTH_R), m=spot(api,MOON_P,MOON_R);
+      const e=ball(EARTH_P,EARTH_R,1.14), m=ball(MOON_P,MOON_R,1.03);
       /* solid: the black hole is not traced through them */
-      if(e) api.occlude(e.x,e.y,e.r,e.d);
-      if(m) api.occlude(m.x,m.y,m.r,m.d);
-      if(e&&m&&m.d>e.d){ drawMoon(m); drawEarth(e); }
+      if(e&&!e.full) api.occlude(e.x,e.y,e.r,e.d);
+      if(m&&!m.full) api.occlude(m.x,m.y,m.r,m.d);
+      if(e&&m&&m.dist>e.dist){ drawMoon(m); drawEarth(e); }
       else { if(e) drawEarth(e); if(m) drawMoon(m); }
     }};
   window.UNIVERSE_EXTRAS.push(earth);

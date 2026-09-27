@@ -819,6 +819,25 @@ void main(){
   o=vec4(c*uA,0.);
 }`;
 
+  /* --- the black hole from afar: while it is only a few pixels across it cannot be traced (the trace lies
+     over everything), so it is drawn in its place among the galaxies instead, as it looks from far away:
+     its tilted pink disk, brighter on the side coming at us, its shadow and the thin ring of light round
+     it. It hands over smoothly to the traced one as the camera comes closer --- */
+  const HOLE_FS=HEAD+`in vec2 vQ; out vec4 o; uniform float uA, uTilt, uS;
+void main(){
+  vec2 p=vQ*uS; float r=length(p);                                /* in the shadow's radii */
+  float e=length(vec2(p.x/max(uTilt,.12),p.y));                    /* on the plane of the disk */
+  float disk=smoothstep(1.15,1.6,e)*exp(-(e-1.4)*.8)*(1.-smoothstep(2.8,4.,e));
+  float dop=1.+.7*clamp(p.y/(e+1e-3),-1.,1.);
+  vec3 col=mix(vec3(.85,.16,.78),vec3(1.,.84,.93),exp(-(e-1.3)*.9))*disk*dop*1.5;
+  float front=step(0.,p.x);                                        /* the near half of the disk passes in front of the shadow */
+  float shadow=(1.-smoothstep(.92,1.04,r));
+  col=col*(1.-shadow*(1.-front*.85))+vec3(1.,.72,.92)*exp(-pow((r-1.06)/.07,2.))*.9;
+  col+=vec3(1.,.38,.82)*.08*exp(-max(r-1.,0.)*.8);
+  float edge=1.-smoothstep(.75,1.,length(vQ));
+  o=vec4(col*uA*edge,shadow*(1.-front*.85*disk)*uA*.96);
+}`;
+
   /* --- the glow around bright things, and developing the picture --- */
   const BRIGHT_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uThr;
 void main(){ vec3 c=vec3(0.);
@@ -1090,6 +1109,7 @@ void main(){
     P.field=compile(FIELD_VS,FIELD_FS);
     P.met=compile(MET_VS,MET_FS);
     P.comet=compile(COMET_VS,COMET_FS);
+    P.hole=compile(SPRITE_VS,HEAD+HOLE_FS.slice(HEAD.length));
     P.bright=compile(FULL_VS,BRIGHT_FS);
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
@@ -1577,6 +1597,7 @@ void main(){
     const list=Object.keys(G).map(id=>world[id]&&{id,w:world[id],e:G[id]}).filter(Boolean)
       .sort((a,b)=>(b.w.cz-cam.z)-(a.w.cz-cam.z));
     for(const it of list) drawGalaxy(it.w,it.e,VP,t);
+    drawHoleFar();
     /* shooting stars and comets */
     drawSkyEvents(now);
     extras("near",t,now);
@@ -1599,7 +1620,7 @@ void main(){
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,bloomA.t); gl.uniform1i(u.uBloom,1);
     gl.uniform1f(u.uExp,1.1); gl.uniform1f(u.uBloomK,TIER.bloom?.55:0); gl.uniform1f(u.uTime,now%100); gl.uniform1f(u.uOutK,1);
     gl.uniform2f(u.uRes,RW,RH);
-    const bh=blackHole();
+    const bh0=blackHole(), bh=bh0&&bh0.a>0?bh0:null;
     gl.uniform4f(u.uBH,bh?bh.q[0]:0,bh?bh.q[1]:0,bh?bh.q[2]:1,bh?starsFade*bh.a:0);
     gl.uniform4f(u.uBHn,bh?bh.n[0]:0,bh?bh.n[1]:1,bh?bh.n[2]:0,t);
     gl.uniform1f(u.uFpx,F*scale);
@@ -1646,6 +1667,9 @@ void main(){
     get fade(){ return starsFade; }, get phone(){ return phone; }, get robot(){ return robot; }, get scene(){ return scene; },
     get cam(){ return cam; }, get camR(){ return camR; },
     alive:()=>alive(), onScreen:p=>onScreen(p), need:()=>need(),
+    /* a world point in the camera's own axes (x right, y down, z ahead), and the picture's size
+       (render px, css px, focal length in css px): for things traced per pixel, like a real sphere */
+    toCam:p=>toCam(p,cam,camR), view:()=>[RW,RH,W,F],
     /* something solid drawn this frame (css px, depth): the black hole is not traced through it */
     occlude:(x,y,r,d)=>{ occluders.push({x,y,r,d}); },
     /* how far a wonder has faded in since it became ready (0 to 1; it asks for frames until 1) */
@@ -1679,15 +1703,22 @@ void main(){
     const s=SIGHTS.bh, a=onScreen(s.p);
     if(!a) return null;
     const rpx=s.R*F/a[2], m=rpx*30;
-    if(rpx<1.5||a[0]<-m||a[1]<-m||a[0]>W+m||a[1]>H+m) return null;
+    if(rpx<.12||a[0]<-m||a[1]<-m||a[0]>W+m||a[1]>H+m) return null;   /* (from afar a speck: drawHoleFar) */
     const R=camR, n=s.n, nc=[R[0]*n[0]+R[1]*n[1]+R[2]*n[2], R[3]*n[0]+R[4]*n[1]+R[5]*n[2], R[6]*n[0]+R[7]*n[1]+R[8]*n[2]];
     const q=toCam(s.p,cam,camR), rh=s.R/2.598;
     /* only a few pixels across (far away, from the Earth or the Moon), it fades out: it is traced
        over everything, so a speck of it would show through whatever stands in front */
-    const k=Math.min(1,Math.max(0,(rpx-3)/4));
-    return k>0?{q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]], a:k*k*(3-2*k), d:q[2]}:null;
+    const k=Math.min(1,Math.max(0,(rpx-3)/3)), sk=k*k*(3-2*k);
+    return {q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]], a:sk, d:q[2], x:a[0], y:a[1], rpx, nc};
   }
 
+  /* the black hole from afar (HOLE_FS), while the traced one is still faint */
+  function drawHoleFar(){
+    const b=blackHole(); if(!b||b.a>=1) return;
+    const u=api.sprite(P.hole,b.x,b.y,b.rpx*4.5,b.rpx*4.5,Math.atan2(b.nc[1],b.nc[0]));
+    gl.uniform1f(u.uA,(1-b.a)*starsFade*Math.min(1,b.rpx/.6)); gl.uniform1f(u.uTilt,Math.abs(b.nc[2])); gl.uniform1f(u.uS,4.5);
+    gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA); api.draw(); gl.blendFunc(gl.ONE,gl.ONE);
+  }
   function drawGalaxy(w,e,VP,t){
     const g=w.g, d=g.disk, dz=w.cz-cam.z;
     if(dz<-w.R*1.5) return;
@@ -1888,6 +1919,40 @@ void main(){
   /* how long a flight takes: a little longer the farther it goes (to the Earth, far behind home, nearly five seconds) */
   const flightTime=(a,b)=>Math.round(Math.min(4800,2200+6*Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)));
   /* onArrive: when the flight is (nearly) there · onCancel: if another flight replaces it first */
+  /* ---------- a flight's way: straight, unless something solid (the Earth, the Moon) stands on it ----------
+     Then it goes round: a point beside each one, far enough out (twice its radius from its centre, or
+     as far as where the flight starts or ends, if that is nearer), and a smooth curve through them all
+     (Catmull–Rom, spaced by length). The camera never passes through a world, as if it were painted */
+  const V3={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],
+    dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], len:a=>Math.hypot(a[0],a[1],a[2])};
+  function wayOf(a,b){
+    const A=[a.x,a.y,a.z], B=[b.x,b.y,b.z], ab=V3.sub(B,A), L2=V3.dot(ab,ab);
+    const pts=[];
+    if(L2>1e-6) EXTRAS.forEach(x=>(x.solids||[]).forEach(o=>{
+      const t=Math.max(0,Math.min(1,V3.dot(V3.sub(o.p,A),ab)/L2));
+      if(t<=.02||t>=.98) return;
+      const near=V3.add(A,V3.mul(ab,t)); let off=V3.sub(near,o.p), d=V3.len(off);
+      const need=Math.min(o.R*2,V3.len(V3.sub(A,o.p))*.98,V3.len(V3.sub(B,o.p))*.98);
+      if(d>=need) return;
+      if(d<1e-3){ off=[ab[2],0,-ab[0]]; if(V3.len(off)<1e-6) off=[1,0,0]; d=0; }       /* dead ahead: go round its side */
+      pts.push({t,p:V3.add(o.p,V3.mul(off,need*1.08/Math.max(V3.len(off),1e-9)))});
+    }));
+    if(!pts.length) return null;
+    pts.sort((u,v)=>u.t-v.t);
+    const P=[A,...pts.map(q=>q.p),B], seg=[];
+    let tot=0; for(let i=1;i<P.length;i++){ const l=V3.len(V3.sub(P[i],P[i-1])); seg.push(l); tot+=l; }
+    return {P,seg,tot};
+  }
+  /* where on that curve, a share e of the way along it */
+  function alongWay(w,e){
+    let s=e*w.tot, i=0;
+    while(i<w.seg.length-1&&s>w.seg[i]){ s-=w.seg[i]; i++; }
+    const u=Math.max(0,Math.min(1,s/(w.seg[i]||1))), P=w.P;
+    const p0=P[Math.max(0,i-1)], p1=P[i], p2=P[i+1], p3=P[Math.min(P.length-1,i+2)];
+    const u2=u*u, u3=u2*u;
+    return [0,1,2].map(k=>.5*((2*p1[k])+(-p0[k]+p2[k])*u+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*u2+(-p0[k]+3*p1[k]-3*p2[k]+p3[k])*u3));
+  }
+
   function go(to,{animate=true,duration,onArrive,onCancel,arriveAt=.85}={}){
     /* already flying there: wait for that same flight to arrive */
     if(anim&&to===scene){ if(onArrive) anim.also.push(onArrive); if(onCancel) anim.cancels.push(onCancel); return; }
@@ -1903,13 +1968,15 @@ void main(){
     const start={...base};
     if(!animate||!fancy()||sameScene){ base={...camFor(to)}; prevCam=null; if(from==="gate") starsFade=1; need(); if(onArrive) onArrive(); return; }
     if(from==="gate"){ flightFromGate=performance.now(); starsFade=0; }
-    if(!duration) duration=flightTime(start,camFor(to));
+    const way=wayOf(start,camFor(to));
+    if(!duration) duration=flightTime(start,camFor(to))*(way?Math.min(1.35,way.tot/Math.max(1e-6,Math.hypot(camFor(to).x-start.x,camFor(to).y-start.y,camFor(to).z-start.z))):1);
     const t0=performance.now(); let reached=false;
     /* taking over a moving camera: it starts already moving, so it does not stop and start again */
     const ease=replaced?easeOut:easeInOut;
     const me={also:onArrive?[onArrive]:[],cancels:onCancel?[onCancel]:[],step(now){
       const p=Math.min(1,(now-t0)/duration), e=ease(p), target=camFor(to);   /* the target follows a resize */
-      base={x:start.x+(target.x-start.x)*e, y:start.y+(target.y-start.y)*e, z:start.z+(target.z-start.z)*e,
+      const wp=way&&e<1?alongWay(way,e):null;
+      base={x:wp?wp[0]:start.x+(target.x-start.x)*e, y:wp?wp[1]:start.y+(target.y-start.y)*e, z:wp?wp[2]:start.z+(target.z-start.z)*e,
         yaw:(start.yaw||0)+((target.yaw||0)-(start.yaw||0))*e, pitch:(start.pitch||0)+((target.pitch||0)-(start.pitch||0))*e};
       if(p>=arriveAt&&!reached){ reached=true; me.also.forEach(fn=>fn()); }
       if(p>=1&&anim===me) anim=null;
@@ -1990,7 +2057,7 @@ void main(){
   return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>ok?!!anim:!!(window.Stars&&Stars.busy()), camera:()=>({...base}),
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
     /* hole(): whether the black hole is on the screen now (tests) */
-    hole:()=>ok&&!!blackHole(),
+    hole:()=>{ if(!ok) return false; const b=blackHole(); return !!b&&b.a>0; },   /* (traced; from afar it is drawn among the galaxies instead) */
     /* sights(): the names of the places that can be flown to and looked at (home.js lists them) */
     sights:sightIds,
     /* place(id): where a sight is on the screen now and how big it looks, in css px (tests) */

@@ -48,7 +48,17 @@ const Astro=(function(){
     const fraction=(1+Math.cos(inc))/2, phase=.5+.5*inc*(angle<0?-1:1)/Math.PI;
     /* its name: new, waxing crescent, first quarter, waxing gibbous, full, and back */
     const names=["new","waxingCrescent","firstQuarter","waxingGibbous","full","waningGibbous","lastQuarter","waningCrescent"];
-    return {phase,fraction,name:names[Math.round(phase*8)%8]};
+    return {phase,fraction,name:names[Math.round(phase*8)%8],inc,angle};
+  }
+  /* the Moon as it hangs in the sky of a place now (SunCalc's formulas): how the Sun lights it (inc: the
+     angle Sun–Moon–Earth, 0 full, π new) and from where on its disc: the bright edge, measured from its
+     north point towards its east (chi), and how far its north is turned from straight up because of where
+     it stands in the sky (q, the parallactic angle). Both on the screen: up is towards the zenith */
+  function moonSky(date,lat,lng){
+    const d=toDays(date), m=moonCoords(d), il=moon(date);
+    const lw=rad*-lng, phi=rad*lat, H=rad*(280.16+360.9856235*d)-lw-m.ra;
+    const q=Math.atan2(Math.sin(H),Math.tan(phi)*Math.cos(m.dec)-Math.sin(m.dec)*Math.cos(H));
+    return {inc:Math.acos(Math.max(-1,Math.min(1,2*il.fraction-1))),chi:il.angle,q,phase:il.phase};
   }
 
   /* ---------- meteor showers ---------- */
@@ -77,5 +87,5 @@ const Astro=(function(){
     return best;
   }
 
-  return {sun,moon,shower};
+  return {sun,moon,moonSky,shower};
 })();

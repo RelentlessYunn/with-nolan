@@ -17,11 +17,16 @@ body.portal-open{overflow:hidden}
 .p-top{text-align:center;animation:rise .6s var(--ease) backwards}
 .p-time{
   font-size:clamp(3.6rem,15vw,6.4rem);font-weight:800;letter-spacing:-.06em;line-height:.9;font-variant-numeric:tabular-nums;
+  padding:.06em .1em .08em .06em;margin:-.06em -.1em -.08em -.06em;   /* the gradient is painted inside the box only: room for the last digit's edge */
   background:linear-gradient(180deg,#FFFFFF 0%,#C2D3EA 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 .p-greeting{margin-top:12px;font-size:1.08rem;font-weight:500;color:#9FB0C6}
 .p-view{width:100%}
 .p-view[hidden]{display:none}
+/* one view of home giving way to another (home, a sight, Notes, Settings…): a soft fade in, never a jump */
+.portal .p-view:not([hidden]){animation:view-in .45s var(--ease) both}
+@keyframes view-in{from{opacity:0}}
+html:not([data-motion=full]) .portal .p-view{animation:none}
 .p-ask{margin:0 0 14px;text-align:center;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 .p-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .p-card{
@@ -168,17 +173,17 @@ html:not([data-motion=full]) .ts-moon,html:not([data-motion=full]) .ts-go{animat
 }
 .p-sight-view{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;max-width:600px;margin:0 auto}
 .p-sight-view .s-fact{margin:0;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  color:color-mix(in srgb,var(--ac) 80%,#fff);text-shadow:0 1px 10px #000}
+  color:color-mix(in srgb,var(--ac) 80%,#fff);text-shadow:0 1px 10px #000;animation:s-rise .6s var(--ease) backwards}
 .p-sight-view h2{margin:0;font-size:clamp(1.7rem,5.4vw,2.5rem);font-weight:800;letter-spacing:-.035em;line-height:1.08;text-shadow:0 2px 20px #000;
   animation:s-rise .6s var(--ease) backwards}
 .p-sight-view .s-text{margin:2px 0 0;color:var(--ink-2);font-size:.92rem;line-height:1.55;max-width:58ch;text-shadow:0 1px 12px #000;animation:s-rise .6s .08s var(--ease) backwards}
-.p-sight-view .s-step{margin:4px 0 0;font-size:.68rem;font-weight:700;letter-spacing:.14em;color:rgba(232,236,246,.45)}
+.p-sight-view .s-step{margin:4px 0 0;font-size:.68rem;font-weight:700;letter-spacing:.14em;color:rgba(232,236,246,.45);animation:s-rise .6s .16s var(--ease) backwards}
 @keyframes s-rise{from{opacity:0;transform:translateY(8px)}}
 /* a short screen (a phone on its side): the words would cover the sight, only its name stays */
 @media (max-height:620px){.p-sight-view .s-text,.p-sight-view .s-step{display:none}.p-sight-view h2{font-size:1.4rem}
   .portal[data-view=sight] .p-in{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}}
 
-/* ---------- the tour's dock: every place (the one you are at lit), the autopilot and home ---------- */
+/* ---------- the tour's dock: every place (the one you are at lit), the one before and after, and home ---------- */
 .tour{
   position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;
   display:flex;align-items:center;gap:6px;padding:7px;width:max-content;max-width:calc(100vw - 20px);
@@ -202,27 +207,21 @@ html:not([data-motion=full]) .ts-moon,html:not([data-motion=full]) .ts-go{animat
 .t-name{font-size:.66rem;font-weight:600;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .t-stop[aria-current]{color:#fff;background:color-mix(in srgb,var(--ac) 16%,transparent)}
 .t-stop[aria-current] .t-ic{transform:scale(1.08);background:color-mix(in srgb,var(--ac) 26%,transparent);box-shadow:0 0 22px -4px var(--ac)}
-/* the autopilot's wait at this place: a thin bar filling under it */
-.t-stop::after{content:"";position:absolute;left:14px;right:14px;bottom:4px;height:2px;border-radius:2px;background:var(--ac);opacity:0;transform:scaleX(0);transform-origin:left}
-.tour.auto.ticking .t-stop[aria-current]::after{opacity:.9;animation:t-fill var(--dwell,16s) linear forwards}
-@keyframes t-fill{to{transform:scaleX(1)}}
+/* a small light under the place you are at */
+.t-stop::after{content:"";position:absolute;left:50%;bottom:3px;width:16px;height:2px;margin-left:-8px;border-radius:2px;background:var(--ac);opacity:0;transform:scaleX(.3);transition:opacity .3s ease,transform .4s var(--spring)}
+.t-stop[aria-current]::after{opacity:.95;transform:none;box-shadow:0 0 8px var(--ac)}
 @media (hover:hover){.t-stop:hover{color:#fff;background:rgba(255,255,255,.07)}.t-stop:hover .t-ic{transform:translateY(-2px) scale(1.06)}}
 .t-stop:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
-.t-auto,.t-exit{flex:0 0 auto;position:relative;display:grid;place-items:center;width:52px;height:52px;padding:0;border:0;border-radius:50%;
-  color:#E6EAF4;background:none;cursor:pointer;text-decoration:none}
-.t-auto svg{position:absolute;inset:0;margin:auto}
-.t-ring{width:44px;height:44px;transform:rotate(-90deg);fill:none;stroke-width:2.2}
-.t-ring circle{stroke:rgba(255,255,255,.16)}
-.t-ring .t-prog{stroke:var(--ac,#8FB6FF);stroke-linecap:round;stroke-dasharray:119.4;stroke-dashoffset:119.4}
-.tour.auto.ticking .t-prog{animation:t-ring var(--dwell,16s) linear forwards}
-@keyframes t-ring{to{stroke-dashoffset:0}}
-.t-play,.t-pause{width:20px;height:20px}
-.t-play{fill:currentColor} .t-pause{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
-.t-auto .t-pause,.tour.auto .t-auto .t-play{display:none}
-.tour.auto .t-auto .t-pause{display:block}
+/* the arrows to the one before and after, at the two ends of the list; home on the right */
+.t-arrow,.t-exit{flex:0 0 auto;position:relative;overflow:hidden;display:grid;place-items:center;width:48px;height:48px;padding:0;border:0;border-radius:50%;
+  color:#E6EAF4;background:none;cursor:pointer;text-decoration:none;transition:background .2s ease,color .2s ease,transform .15s var(--spring)}
+.t-arrow{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.t-arrow svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.t-arrow:active{transform:scale(.9)}
 .t-exit .logo-mark{width:30px;height:30px;overflow:visible}
-@media (hover:hover){.t-auto:hover,.t-exit:hover{color:#fff}.t-exit:hover .logo-mark .lm-line{stroke:#fff;opacity:1}}
-.t-auto:focus-visible,.t-exit:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+@media (hover:hover){.t-arrow:hover{color:#fff;background:color-mix(in srgb,var(--ac) 24%,transparent);border-color:color-mix(in srgb,var(--ac) 55%,transparent)}
+  .t-exit:hover{color:#fff}.t-exit:hover .logo-mark .lm-line{stroke:#fff;opacity:1}}
+.t-arrow:focus-visible,.t-exit:focus-visible{outline:2px solid #fff;outline-offset:-2px}
 html:not([data-motion=full]) .tour{animation:none}
 
 @media (max-width:620px){
@@ -244,5 +243,6 @@ html:not([data-motion=full]) .tour{animation:none}
   .tour{left:10px;right:10px;transform:none;width:auto;max-width:none;border-radius:22px;padding:6px;gap:2px}
   @keyframes tour-in{from{opacity:0;transform:translateY(16px)}}
   .t-stop{width:68px}
-  .t-auto,.t-exit{width:46px;height:46px}
+  .t-arrow,.t-exit{width:42px;height:42px}
+  .t-exit .logo-mark{width:26px;height:26px}
 }

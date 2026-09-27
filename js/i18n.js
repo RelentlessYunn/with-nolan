@@ -92,7 +92,7 @@ es:{
   "weather.drizzle":"Llovizna", "weather.rain_":"Lluvia", "weather.showers":"Chubascos", "weather.snow":"Nieve", "weather.storm":"Tormenta",
   "s.viewSky":"Ver el cielo", "s.viewSkyExit":"Volver",
   /* the sights (home.js): name, a few words on the card, what it is, and a little more */
-  "s.tour":"Empieza el viaje", "s.tourSub":"Un recorrido por el universo: la Tierra, la Luna, un agujero negro, galaxias y nebulosas", "s.tourCount":"{n} destinos · elige a dónde ir", "s.tourNav":"Destinos del viaje", "s.tourAuto":"Piloto automático", "s.sight.count":"Destino {n} de {total}",
+  "s.tour":"Empieza el viaje", "s.tourSub":"Un recorrido por el universo: la Tierra, la Luna, un agujero negro, galaxias y nebulosas", "s.tourCount":"{n} destinos · elige a dónde ir", "s.tourNav":"Destinos del viaje", "s.sight.prev":"Anterior: {name}", "s.sight.next":"Siguiente: {name}", "s.sight.count":"Destino {n} de {total}",
   "sight.earth.name":"La Tierra", "sight.earth.tag":"Volver a casa", "sight.earth.fact":"Nuestro planeta · donde empieza el viaje",
   "sight.earth.text":"Aquí empezó todo: cada viaje por este universo despega de este planeta azul. En la cara de día, océanos, costas y nubes; en la de noche, las luces de las ciudades y las auroras sobre los polos.",
   "sight.moon.name":"La Luna", "sight.moon.tag":"Esta noche: {phase}", "sight.moon.fact":"A 384 400 km de la Tierra",
@@ -152,6 +152,7 @@ es:{
   /* settings */
   "s.settings.lead":"Se guarda en este dispositivo.",
   "s.set.lang":"Idioma", "s.set.langHelp":"Toda la interfaz. Los textos de las asignaturas (evaluación, consejos, temario) siguen en español.",
+  "s.set.scroll":"Desplazamiento suave", "s.set.scrollHelp":"La rueda del ratón desliza la página con suavidad en lugar de a saltos. En el móvil y con el panel táctil ya es suave.", "s.set.scroll.smooth":"Activado", "s.set.scroll.native":"Desactivado",
   "s.set.look":"Efectos",
   "s.set.lookHelp":"Alto: el universo en 3D vivo, con galaxias, un agujero negro, cometas y estrellas fugaces. Medio: un cielo de estrellas, mucho más ligero, donde cada sección es una estrella brillante hacia la que vuela la cámara. Mínimo: fondo liso y nada se mueve, para móviles lentos o ahorrar batería. Si tu sistema pide reducir el movimiento, no se anima nada.",
   "s.set.look.high":"Alto", "s.set.look.medium":"Medio", "s.set.look.low":"Mínimo",
@@ -219,7 +220,7 @@ en:{
   "weather.clear":"Clear", "weather.partly":"Partly cloudy", "weather.cloudy":"Cloudy", "weather.fog":"Fog",
   "weather.drizzle":"Drizzle", "weather.rain_":"Rain", "weather.showers":"Showers", "weather.snow":"Snow", "weather.storm":"Thunderstorm",
   "s.viewSky":"View the sky", "s.viewSkyExit":"Back",
-  "s.tour":"Start the journey", "s.tourSub":"A tour through the universe: the Earth, the Moon, a black hole, galaxies and nebulae", "s.tourCount":"{n} destinations · choose where to go", "s.tourNav":"Destinations", "s.tourAuto":"Autopilot", "s.sight.count":"Destination {n} of {total}",
+  "s.tour":"Start the journey", "s.tourSub":"A tour through the universe: the Earth, the Moon, a black hole, galaxies and nebulae", "s.tourCount":"{n} destinations · choose where to go", "s.tourNav":"Destinations", "s.sight.prev":"Previous: {name}", "s.sight.next":"Next: {name}", "s.sight.count":"Destination {n} of {total}",
   "sight.earth.name":"Earth", "sight.earth.tag":"Back home", "sight.earth.fact":"Our planet · where the journey begins",
   "sight.earth.text":"Where it all began: every journey through this universe takes off from this blue planet. On the day side, oceans, coasts and clouds; on the night side, city lights and auroras over the poles.",
   "sight.moon.name":"The Moon", "sight.moon.tag":"Tonight: {phase}", "sight.moon.fact":"384,400 km from Earth",
@@ -277,6 +278,7 @@ en:{
   "s.wip":"Under construction", "s.nolanSoon":"Coming soon, with whatever you tell me.", "s.view":"View",
   "s.settings.lead":"Saved on this device.",
   "s.set.lang":"Language", "s.set.langHelp":"The whole interface. Subject texts (grading, advice, syllabus) stay in Spanish.",
+  "s.set.scroll":"Smooth scrolling", "s.set.scrollHelp":"The mouse wheel glides the page smoothly instead of in jumps. On phones and trackpads it is already smooth.", "s.set.scroll.smooth":"On", "s.set.scroll.native":"Off",
   "s.set.look":"Effects",
   "s.set.lookHelp":"High: the living 3D universe, with galaxies, a black hole, comets and shooting stars. Medium: a sky of stars, much lighter, where each section is a bright star the camera flies to. Minimal: a plain background and nothing moves, for slow phones or to save battery. If your system asks for reduced motion, nothing animates.",
   "s.set.look.high":"High", "s.set.look.medium":"Medium", "s.set.look.low":"Minimal",

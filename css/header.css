@@ -70,6 +70,7 @@ svg .f2{fill:currentColor;fill-opacity:.28}
 }
 .clock-time .digit{
   display:inline-block;position:relative;
+  padding:.05em .08em .07em;margin:-.05em -.08em -.07em;   /* (the gradient is painted inside the box only: room for each digit's edge) */
   background:linear-gradient(180deg,#FFFFFF 0%,#C9D8EC 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }

@@ -10,7 +10,10 @@
      options:[["es","Español"],["en","English"]]},          /* each language in its own name */
     /* animations and quality, as one choice (LOOKS in prefs.js) */
     {key:"look",  label:"s.set.look",   help:"s.set.lookHelp",
-     options:Object.keys(LOOKS).map(v=>[v,t("s.set.look."+v)])}
+     options:Object.keys(LOOKS).map(v=>[v,t("s.set.look."+v)])},
+    /* the mouse wheel glides (smooth.js); no reload needed */
+    {key:"scroll",label:"s.set.scroll", help:"s.set.scrollHelp",
+     options:[["smooth",t("s.set.scroll.smooth")],["native",t("s.set.scroll.native")]]}
   ];
   const current=k=>k==="look"?currentLook():SETTINGS[k];
   function render(){

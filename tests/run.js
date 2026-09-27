@@ -211,10 +211,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     /* the journey: home's big button flies to the Earth and starts the tour */
     await p.click("#tourStart"); await p.waitForFunction(()=>location.hash==="#earth"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
     const st=await p.evaluate(()=>({scene:Universe.scene(),view:!document.getElementById("sightView").hidden,tour:!document.getElementById("tour").hidden,
-      auto:document.getElementById("tourAuto").getAttribute("aria-pressed"),stops:document.querySelectorAll("#tourList .t-stop").length,
+      stops:document.querySelectorAll("#tourList .t-stop").length,
       here:(document.querySelector("#tourList .t-stop[aria-current]")||{dataset:{}}).dataset.sight,arrows:!!document.querySelector(".s-arrow,#placeMenu")}));
-    ok(st.scene==="earth"&&st.view&&st.tour&&st.auto==="true"&&st.stops===11&&st.here==="earth"&&!st.arrows,
-      `"Start the journey" flies to the Earth and starts the tour: the dock holds the eleven places, the autopilot on, no arrows (${JSON.stringify(st)})`);
+    ok(st.scene==="earth"&&st.view&&st.tour&&st.stops===11&&st.here==="earth"&&!st.arrows,
+      `"Start the journey" flies to the Earth and starts the tour: the dock holds the eleven places, no arrows at the screen's edges (${JSON.stringify(st)})`);
     /* choosing where to go: any place in the dock (clicked as soon as the camera stops: it must answer) */
     await p.waitForTimeout(800);                      /* (the dock has slid into place) */
     const at=await p.evaluate(()=>{ const r=document.getElementById("tour").getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
@@ -223,14 +223,11 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const at2=await p.evaluate(()=>{ const r=document.getElementById("tour").getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
     ok(nx.scene==="orion"&&/Orión/.test(nx.h)&&nx.here==="orion",`a place chosen in the dock flies there, says what it is and is lit in the dock (${JSON.stringify(nx)})`);
     ok(at.join()===at2.join(),`the dock stays in the same place from one sight to the next (${at} ${at2})`);
-    /* the autopilot: paused, it waits no more; on, it flies on to the next place by itself */
-    await p.click("#tourAuto");
-    ok(await p.evaluate(()=>document.getElementById("tourAuto").getAttribute("aria-pressed")==="false"&&!Home.tour.auto()&&!document.getElementById("tour").classList.contains("ticking")),"the autopilot can be paused");
-    await p.click("#tourAuto"); await p.evaluate(()=>Home.tour.onward());
+    /* its arrows: the next one, and nothing moves on by itself */
+    await p.click('#tour .t-arrow[data-dir="next"]');
     await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
-    const on=await p.evaluate(()=>({hash:location.hash,auto:Home.tour.auto(),h:document.querySelector("#sightView h2").textContent}));
-    ok(on.hash==="#pleiades"&&on.auto&&/Pléyades/.test(on.h),`on, the autopilot flies on to the next place (${JSON.stringify(on)})`);
-    await p.click("#tourAuto");                       /* (paused: the keys below must not race it) */
+    const on=await p.evaluate(()=>({hash:location.hash,h:document.querySelector("#sightView h2").textContent,prev:document.querySelector('#tour .t-arrow[data-dir="prev"]').getAttribute("href"),auto:!!document.getElementById("tourAuto")}));
+    ok(on.hash==="#pleiades"&&/Pléyades/.test(on.h)&&on.prev==="#orion"&&!on.auto,`the dock's arrows go to the next and the one before; no timed autopilot (${JSON.stringify(on)})`);
     /* the keys on their own: from the Pleiades, once everything has settled */
     if(await p.evaluate(()=>location.hash!=="#pleiades")){ await p.evaluate(()=>{ location.hash="#pleiades"; }); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{}); }
     await p.waitForTimeout(1500);
@@ -509,8 +506,21 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
 
   section("Settings");
   {
+    /* smooth scrolling: a notch of the wheel glides home's window there; turned off, it jumps at once */
+    const p=await open(b,{hash:"home",settings:{quality:"low"}});
+    const wheel=async()=>{ await p.mouse.move(640,450); const y0=await p.evaluate(()=>document.getElementById("portal").scrollTop);
+      await p.mouse.wheel(0,300); await p.waitForTimeout(60); const mid=await p.evaluate(()=>document.getElementById("portal").scrollTop);
+      await p.waitForTimeout(1200); const end=await p.evaluate(()=>document.getElementById("portal").scrollTop); return {y0,mid,end}; };
+    const sm=await wheel();
+    await p.evaluate(()=>{ document.getElementById("portal").scrollTop=0; saveSetting("scroll","native"); }); await p.waitForTimeout(300);
+    const nat=await wheel();
+    ok(sm.mid>sm.y0&&sm.mid<sm.y0+280&&Math.abs(sm.end-sm.y0-300)<3&&Math.abs(nat.mid-nat.y0-300)<3,
+      `smooth scrolling: the wheel glides (part of the way at first, all of it after), and Off makes it jump at once (${JSON.stringify({sm,nat})})`);
+    await p.context().close();
+  }
+  {
     const p=await open(b,{hash:"settings"});
-    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===2&&!!document.querySelector(".seg[data-key=look]")&&!document.querySelector(".seg[data-key=theme]")),"#settings shows language and Effects, one choice for animations and quality (no light theme any more)");
+    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===3&&!!document.querySelector(".seg[data-key=look]")&&!!document.querySelector(".seg[data-key=scroll]")&&!document.querySelector(".seg[data-key=theme]")),"#settings shows language, Effects (one choice for animations and quality) and smooth scrolling (no light theme any more)");
     const nav=p.waitForEvent("framenavigated");
     await p.click('.seg[data-key=lang] button[data-value=en]'); await p.waitForTimeout(250);
     ok(await p.evaluate(()=>document.getElementById("shift").classList.contains("on")&&!document.querySelector("#shift canvas")),"changing a setting fades softly before reloading (no tunnel of stars)");
