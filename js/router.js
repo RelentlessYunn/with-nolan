@@ -70,30 +70,43 @@ const Router=(function(){
     emit("tab",tab);
   }
 
+  /* ---------- the way back ----------
+     Every place of home you go to (home, a sight, Notes, Settings, Nolan), and the app from home, is a
+     step in the browser's history, so Back (the phone's too) and Escape walk back the way you came.
+     Each step carries its depth: Escape only goes back while there is a step of this site behind */
+  let depth=0;
+  try{ if(!history.state||typeof history.state.d!=="number") history.replaceState({d:0},""); depth=history.state.d; }catch(e){}
+  window.addEventListener("popstate",e=>{ depth=e.state&&typeof e.state.d==="number"?e.state.d:0; });
+  const replace=hash=>history.replaceState({d:depth},"",hash);
+  function push(hash){ if(location.hash===hash) return; depth++; history.pushState({d:depth},"",hash); }
+  /* a step taken by a plain link (its href): it gets its depth when it arrives */
+  function stamp(){ if(!history.state||typeof history.state.d!=="number"){ depth++; history.replaceState({d:depth},""); } }
+
   /* ---------- routes ---------- */
   const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="nolan"||r.startsWith("nolan/")||Home.isSight(r);
   function handle(){
     let r=decodeURIComponent(location.hash.slice(1));
     if(r.includes("debug")) return;                    /* handled by debug.js */
     if(!r) r="home";                                   /* the app always starts at home */
+    stamp();
     /* the old "to explore" pages: their galaxies are sights now */
-    if(r.startsWith("soon/")){ r=({"soon/andromeda":"ringgalaxy","soon/sombrero":"edgeon"})[r]||"home"; history.replaceState(null,"","#"+r); }
-    if(ALIASES[r]){ r=ALIASES[r]; history.replaceState(null,"","#"+r); }
+    if(r.startsWith("soon/")){ r=({"soon/andromeda":"ringgalaxy","soon/sombrero":"edgeon"})[r]||"home"; replace("#"+r); }
+    if(ALIASES[r]){ r=ALIASES[r]; replace("#"+r); }
     /* a guest has the whole app with the demo's data, but not Nolan's own pages (Notes for Claude, Nolan) */
-    if(Gate.guest()&&(r==="notes"||r==="nolan"||r.startsWith("nolan/"))){ r="home"; history.replaceState(null,"","#home"); }
+    if(Gate.guest()&&(r==="notes"||r==="nolan"||r.startsWith("nolan/"))){ r="home"; replace("#home"); }
     if(isHome(r)){
       if(!shownOnce) show(last,{quiet:true});          /* behind home, the last tab */
-      const [view,...sub]=r.split("/"); Home.open(view,sub.join("/"),last); return;
+      const [view,...sub]=r.split("/"); Home.visit(view,sub.join("/"),last); return;
     }
     Home.close();
     if(ALIASES[r]) r=ALIASES[r];
     const tab=PAGES.includes(r)||TABS[r]?r:"schedule";
-    if("#"+tab!==location.hash&&location.hash) history.replaceState(null,"","#"+tab);   /* old or unknown links */
+    if("#"+tab!==location.hash&&location.hash) replace("#"+tab);   /* old or unknown links */
     show(tab);
   }
-  /* go to a tab without filling the history (Back does not walk through tabs) */
+  /* go to a tab without filling the history (Back does not walk through tabs); from home it is a step */
   function goTo(tab){
-    history.replaceState(null,"","#"+tab);
+    if(Home.isOpen()) push("#"+tab); else replace("#"+tab);
     Home.close();
     show(tab);
   }
@@ -108,12 +121,16 @@ const Router=(function(){
   }));
   /* the UC3M card on home takes you back to the tab you were on */
   $("#homeUc3m").addEventListener("click",ev=>{ ev.preventDefault(); Home.enter("uc3m",()=>goTo(last)); });
-  /* Escape goes back: from a sight (or Nolan, Notes, Settings) to where you came from, from home
-     to the app; in the app it closes whichever detail panel is open */
+  /* Escape goes back: to where you came from (the place before, home, the tab); in the app it first closes
+     whichever detail panel is open; with nothing of this site behind, from a place to home, from home to the app */
   document.addEventListener("keydown",ev=>{
     if(ev.key!=="Escape") return;
-    if(Home.isOpen()){ const b=Home.back(); if(b){ history.replaceState(null,"",b); handle(); } else goTo(last); return; }
-    ["today-detail","planner-detail","subjectPeek"].forEach(id=>{ const b=document.getElementById(id); if(b) b.hidden=true; });
+    /* a detail panel open in the app: Escape closes it first */
+    const panels=["today-detail","planner-detail","subjectPeek"].map(id=>document.getElementById(id)).filter(b=>b&&!b.hidden);
+    if(!Home.isOpen()&&panels.length){ panels.forEach(b=>b.hidden=true); return; }
+    /* then it goes back the way you came, while there is a step of this site behind */
+    if(depth>0){ ev.preventDefault(); history.back(); return; }
+    if(Home.isOpen()){ const b=Home.back(); if(b){ replace(b); handle(); } else goTo(last); }
   });
 
   /* ---------- swipe with the finger (mobile) ----------
@@ -199,5 +216,5 @@ const Router=(function(){
   window.addEventListener("load",()=>setTimeout(toTop,0));
 
   /* route(): follow the address again (the gate calls it when a guest comes in) */
-  return {current:()=>current, last:()=>last, goTo, route:handle};
+  return {current:()=>current, last:()=>last, goTo, push, route:handle};
 })();

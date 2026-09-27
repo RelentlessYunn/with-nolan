@@ -4,7 +4,7 @@
    Needs Playwright with Chromium (npm i playwright). It never touches the
    real cloud or the real weather: JSONBin and Open-Meteo calls are simulated
    or blocked (config.js may hold real keys).
-   126 checks (without NOLAN_PIN: 122, and 3 skipped), by section:
+   127 checks (without NOLAN_PIN: 123, and 3 skipped), by section:
    · Loading: no errors, nothing wider than a phone.
    · PIN and start: the entry screen (logo and guest button; the logo or a
      typed digit opens the keypad; nothing read from the cloud behind it),
@@ -237,8 +237,13 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.keyboard.press("ArrowRight"); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
     const fwd=await p.evaluate(()=>Universe.scene());
     ok(back==="orion"&&fwd==="pleiades",`and the arrow keys go back and forth (${back}, ${fwd})`);
-    await p.keyboard.press("Escape"); await p.waitForTimeout(300);
-    ok(await p.evaluate(()=>location.hash==="#home"&&!document.getElementById("portal").hidden&&Universe.scene()==="home"),"Escape on a sight goes back home (not into the app)");
+    /* Escape (and the phone's Back) walk back the way you came: Orion before the Pleiades, and so on to home */
+    /* (Back is asynchronous: wait for the camera to be there, not only the address) */
+    await p.keyboard.press("Escape"); await p.waitForFunction(()=>location.hash==="#orion"&&Universe.scene()==="orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const esc=await p.evaluate(()=>({hash:location.hash,scene:Universe.scene(),h:(document.querySelector("#sightView h2")||{}).textContent,open:!document.getElementById("portal").hidden}));
+    ok(esc.hash==="#orion"&&esc.scene==="orion"&&/Orión/.test(esc.h)&&esc.open,`Escape goes back to the place before, flying there (${JSON.stringify(esc)})`);
+    await p.goBack(); await p.waitForFunction(()=>location.hash==="#pleiades"&&Universe.scene()==="pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    ok(await p.evaluate(()=>location.hash==="#pleiades"&&Universe.scene()==="pleiades"&&!document.getElementById("portal").hidden),"and Back walks the same way (the phone's Back does not leave the site)");
     await p.goto(PAGE+"#soon/andromeda"); await p.waitForTimeout(500);
     ok(await p.evaluate(()=>location.hash==="#ringgalaxy"&&!document.body.textContent.includes("Andrómeda")&&!document.body.textContent.includes("Sombrero")),
       "no more Andrómeda or Sombrero cards: their galaxies are sights, and the old links fly to them");

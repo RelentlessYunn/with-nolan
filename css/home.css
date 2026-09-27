@@ -99,26 +99,30 @@ html:not([data-motion=full]) .portal .p-view{animation:none}
 /* ---------- the journey: one big button that starts a tour through the universe (home.js) ----------
    a window onto space: a rim of light turning round it, stars twinkling behind, a small world with its
    rings and moon, and the way in */
-@property --ta{syntax:"<angle>";inherits:false;initial-value:0deg}
 .tour-start{
   grid-column:1/-1;position:relative;overflow:hidden;isolation:isolate;
   display:flex;align-items:center;gap:30px;padding:40px 40px;border-radius:30px;margin-bottom:6px;
   color:var(--ink);text-decoration:none;
+  background:#0A0C18;
+  box-shadow:0 26px 70px -28px rgba(90,120,255,.7);
+  transition:transform .4s var(--spring),box-shadow .4s ease;
+}
+/* the rim of light: a big turning wheel of colour behind, covered by the card's own face but for a thin edge
+   (only transform and opacity move: the compositor turns it, nothing is repainted) */
+.tour-start::before{
+  content:"";position:absolute;left:-25%;top:50%;width:150%;aspect-ratio:1;margin-top:-75%;z-index:-2;pointer-events:none;
+  background:conic-gradient(rgba(143,182,255,.08),#8FB6FF 12%,#FF8AD8 22%,rgba(255,255,255,.08) 34%,rgba(143,182,255,.08) 62%,#6CE0D0 76%,rgba(143,182,255,.08) 88%);
+  animation:ts-spin 9s linear infinite;
+}
+.tour-start::after{
+  content:"";position:absolute;inset:1.5px;border-radius:inherit;z-index:-1;pointer-events:none;
   background:
     radial-gradient(90% 160% at 8% 50%,rgba(84,120,255,.30),transparent 60%),
     radial-gradient(70% 120% at 100% 0%,rgba(255,110,200,.20),transparent 62%),
     radial-gradient(60% 120% at 80% 110%,rgba(80,220,210,.14),transparent 60%),
-    rgba(9,11,22,.78);
-  box-shadow:0 26px 70px -28px rgba(90,120,255,.7),inset 0 1px 0 rgba(255,255,255,.08);
-  transition:transform .4s var(--spring),box-shadow .4s ease;
+    #0A0C18;
 }
-.tour-start::before{
-  content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;z-index:-1;pointer-events:none;
-  background:conic-gradient(from var(--ta),rgba(143,182,255,.08),#8FB6FF 12%,#FF8AD8 22%,rgba(255,255,255,.08) 34%,rgba(143,182,255,.08) 62%,#6CE0D0 76%,rgba(143,182,255,.08) 88%);
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
-  animation:ts-spin 7s linear infinite;
-}
-@keyframes ts-spin{to{--ta:360deg}}
+@keyframes ts-spin{to{transform:rotate(360deg)}}
 .tour-start>*:not(.ripple){position:relative}
 .ts-sky{position:absolute!important;inset:0;z-index:-1;pointer-events:none}
 .ts-sky i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff;opacity:.2;animation:ts-tw 3.6s ease-in-out infinite}
@@ -143,9 +147,11 @@ html:not([data-motion=full]) .portal .p-view{animation:none}
 .ts-txt em{font-style:normal;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9DB8FF}
 .ts-go{flex:0 0 auto;display:grid;place-items:center;width:72px;height:72px;border-radius:50%;
   color:#0A0E1C;background:radial-gradient(circle at 35% 30%,#fff,#C9D8FF 45%,#8FB6FF);
-  box-shadow:0 0 0 0 rgba(143,182,255,.55),0 10px 30px -8px rgba(143,182,255,.9);animation:ts-pulse 2.8s ease-out infinite}
+  box-shadow:0 10px 30px -8px rgba(143,182,255,.9)}
+/* its pulse: a ring that grows and fades (transform and opacity only) */
+.ts-go::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(143,182,255,.55);animation:ts-pulse 2.8s ease-out infinite}
 .ts-go svg{width:26px;height:26px;margin-left:3px;fill:currentColor}
-@keyframes ts-pulse{0%{box-shadow:0 0 0 0 rgba(143,182,255,.5),0 10px 30px -8px rgba(143,182,255,.9)}70%,100%{box-shadow:0 0 0 18px rgba(143,182,255,0),0 10px 30px -8px rgba(143,182,255,.9)}}
+@keyframes ts-pulse{0%{transform:scale(1);opacity:.9}70%,100%{transform:scale(1.5);opacity:0}}
 @media (hover:hover){
   .tour-start:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 34px 80px -26px rgba(110,140,255,.9),inset 0 1px 0 rgba(255,255,255,.1)}
   .tour-start:hover .ts-go{transform:scale(1.08)}
@@ -156,7 +162,7 @@ html:not([data-motion=full]) .portal .p-view{animation:none}
 /* the sights are places of the 3D universe: without it (Effects Medium or Minimal) there is nothing to fly to */
 html.nogl .tour-start{display:none}
 html:not([data-motion=full]) .tour-start::before,html:not([data-motion=full]) .ts-sky i,
-html:not([data-motion=full]) .ts-moon,html:not([data-motion=full]) .ts-go{animation:none}
+html:not([data-motion=full]) .ts-moon,html:not([data-motion=full]) .ts-go::before{animation:none}
 .p-ic svg .dot{fill:currentColor;stroke:none}
 .p-ic svg .core{fill:#fff;stroke:none;filter:drop-shadow(0 0 3px currentColor)}
 .p-ic svg .haze{stroke-width:1.1;opacity:.4}
@@ -188,7 +194,7 @@ html:not([data-motion=full]) .ts-moon,html:not([data-motion=full]) .ts-go{animat
   position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;
   display:flex;align-items:center;gap:6px;padding:7px;width:max-content;max-width:calc(100vw - 20px);
   border-radius:24px;background:rgba(8,10,18,.68);border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   box-shadow:0 24px 60px -24px #000,inset 0 1px 0 rgba(255,255,255,.06);
   transition:opacity .4s ease;animation:tour-in .55s var(--ease) backwards;
 }

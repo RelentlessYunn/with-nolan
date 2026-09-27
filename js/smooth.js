@@ -1,7 +1,8 @@
 /* ==========================================================
    smooth.js — smooth scrolling (Settings → Smooth scrolling, on by default).
    A mouse wheel moves the page in steps; here each step sets where the page
-   should get to, and it glides there, easing out, frame by frame. The same for
+   should get to, and the browser glides it there (its own smooth scrolling,
+   which runs apart from the page, so it never stutters). The same for
    anything that scrolls inside the page (home's window, a list…): whatever is
    under the pointer and can still move that way.
    Left alone: trackpads and phones (they already glide, with their own
@@ -28,20 +29,9 @@ const Smooth=(function(){
     return document.scrollingElement||root;
   }
 
-  const moving=new Map();                                     /* element → {to, at, last} */
-  function step(el,now){
-    const m=moving.get(el); if(!m) return;
-    /* someone else moved it (the scrollbar, a key, the code): start from there */
-    if(Math.abs(el.scrollTop-m.last)>2){ m.at=el.scrollTop; m.to=el.scrollTop+(m.to-m.last); }
-    const dt=Math.min(.05,(now-(m.t||now))/1000)||.016; m.t=now;
-    m.at+=(m.to-m.at)*(1-Math.exp(-dt*11));
-    const max=el.scrollHeight-el.clientHeight;
-    m.to=Math.max(0,Math.min(max,m.to));
-    if(Math.abs(m.to-m.at)<.5){ el.scrollTop=m.to; moving.delete(el); return; }
-    el.scrollTop=m.at; m.last=el.scrollTop;
-    requestAnimationFrame(t=>step(el,t));
-  }
-
+  /* the glide itself is the browser's (a smooth scrollTo): it runs off the page's own thread, so a busy
+     frame of the universe never makes it stutter. Each notch only moves where it is heading */
+  const heading=new WeakMap();                                 /* element → {to, at} */
   addEventListener("wheel",ev=>{
     if(!on()||ev.defaultPrevented||ev.ctrlKey||ev.metaKey) return;
     if(Math.abs(ev.deltaX)>Math.abs(ev.deltaY)||ev.shiftKey) return;              /* sideways: as it is */
@@ -50,9 +40,11 @@ const Smooth=(function(){
     const dy=ev.deltaY*(ev.deltaMode===1?40:ev.deltaMode===2?innerHeight*.9:1);
     const el=scroller(ev.target,dy); if(!el) return;
     ev.preventDefault();
-    let m=moving.get(el);
-    if(!m){ m={at:el.scrollTop,to:el.scrollTop,last:el.scrollTop}; moving.set(el,m); requestAnimationFrame(t=>step(el,t)); }
-    m.to+=dy;
+    const now=performance.now(), max=el.scrollHeight-el.clientHeight;
+    let h=heading.get(el);
+    if(!h||now-h.at>450||Math.abs(el.scrollTop-h.to)>innerHeight*2) h={to:el.scrollTop};   /* (moved some other way meanwhile) */
+    h.to=Math.max(0,Math.min(max,h.to+dy)); h.at=now; heading.set(el,h);
+    el.scrollTo({top:h.to,behavior:"smooth"});
   },{passive:false});
 
   return {on};

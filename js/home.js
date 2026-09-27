@@ -143,6 +143,14 @@ const Home=(function(){
     /* focus goes into the window (Tab continues through the cards), without marking any */
     P.focus({preventScroll:true});
   }
+  /* going to a view by its address (a link, Back, Escape): with the same flight and fades as a click, when
+     home is open and the camera has somewhere else to go; otherwise it simply opens */
+  function visit(view,subroute,backTo){
+    const to=sceneOf(view);
+    if(!P.hidden&&!P.classList.contains("leaving")&&!entering&&to!==current&&Universe.scene()!==to&&!PAGES.includes(view))
+      enter(to,()=>open(view,subroute,backTo));
+    else open(view,subroute,backTo);
+  }
   function close(){
     if(P.hidden) return;
     Universe.go("uc3m");                                /* the app lives inside the UC3M galaxy */
@@ -225,7 +233,7 @@ const Home=(function(){
     if(!a||a.id==="homeUc3m"||ev.defaultPrevented||ev.button||ev.metaKey||ev.ctrlKey||ev.shiftKey||ev.altKey) return;
     ev.preventDefault();
     const h=a.getAttribute("href").slice(1);
-    enter(a.dataset.scene,()=>{ history.replaceState(null,"","#"+h); const [v,...rest]=h.split("/"); open(v,rest.join("/")); });
+    enter(a.dataset.scene,()=>{ Router.push("#"+h); const [v,...rest]=h.split("/"); open(v,rest.join("/")); });
   };
   P.addEventListener("click",onScene);                  /* (the dock too: it is inside home's window) */
   /* on a sight, the arrow keys go to the one before or after */
@@ -238,6 +246,6 @@ const Home=(function(){
   drawSights();
 
   /* scene(): where the camera belongs for what is on screen (the app lives in UC3M) */
-  return {open, close, enter, intro, back, isSight, sights:()=>SIGHTS.map(s=>s.id),
+  return {open, visit, close, enter, intro, back, isSight, sights:()=>SIGHTS.map(s=>s.id),
     scene:()=>P.hidden||P.classList.contains("leaving")?"uc3m":current, isOpen:()=>!P.hidden&&!P.classList.contains("leaving")};
 })();

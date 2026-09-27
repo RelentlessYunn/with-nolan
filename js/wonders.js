@@ -336,13 +336,15 @@ vec3 turnS(vec3 n,float a){ float c=cos(a), s=sin(a); vec3 m=vec3(c*n.x+s*n.z,n.
 /* the clouds at a point (their own frame, drifting): where the climate makes them, the tropics' line of
    storms and the storm tracks of middle latitudes; few over the deserts of the belts between; wisps and
    curling fronts rather than balls */
-float cloudAt(vec3 cs){
-  vec3 cw=vec3(fbm3(cs*2.6+1.,4),fbm3(cs*2.6+4.,4),fbm3(cs*2.6+8.,4))-.5;
+float cloudAt(vec3 cs,bool full){
+  /* (the shadows only need the clouds' rough shape: fewer layers of noise, so the Earth stays light to draw) */
+  int o1=full?3:2, o2=full?5:3;
+  vec3 cw=vec3(fbm3(cs*2.6+1.,o1),fbm3(cs*2.6+4.,o1),fbm3(cs*2.6+8.,o1))-.5;
   float la=asin(clamp(cs.y,-1.,1.));
   float belt=exp(-pow(la/.13,2.))*.75+exp(-pow((abs(la)-.9)/.28,2.));
-  float base=fbm3(cs*vec3(3.6,5.2,3.6)+cw*2.4,6);
+  float base=fbm3(cs*vec3(3.6,5.2,3.6)+cw*2.4,o2);
   float c=smoothstep(.56-.13*belt,.78-.1*belt,base);
-  return c*(.45+.55*fbm3(cs*22.+cw*4.,3))*.9;
+  return c*(full?.45+.55*fbm3(cs*22.+cw*4.,2):.75)*.9;
 }
 /* the height of the ground: a few big continents with ragged, warped coasts */
 float ground(vec3 s){
@@ -403,11 +405,11 @@ void main(){
     }
     /* clouds: their own slow drift over the ground, in swirls and long bands */
     vec3 cs=turnS(n,uSpin*1.18+uT*.004);
-    float cl=cloudAt(cs);
+    float cl=cloudAt(cs,true);
     /* sunlight: reddened where it grazes the ground; the clouds' shadows fall just beside them */
     float sunL=max(rmu,0.);
     vec3 sunC=mix(vec3(1.,.42,.18),vec3(1.,.97,.93),smoothstep(0.,.3,mu));
-    float shade=1.-.45*cloudAt(turnS(normalize(n+L*.01),uSpin*1.18+uT*.004));
+    float shade=1.-.45*cloudAt(turnS(normalize(n+L*.01),uSpin*1.18+uT*.004),false);
     vec3 dayC=mix(surf*shade*(sunL*1.2+.015),vec3(.96,.97,1.)*(max(mu,0.)*1.2+.015),cl)*sunC;
     /* the Sun's glint on the sea: a sharp spot in a wider sheen, hidden under clouds */
     vec3 v=-d, hv=normalize(L+v); float nh=max(dot(n,hv),0.);

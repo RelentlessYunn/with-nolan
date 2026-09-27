@@ -122,7 +122,7 @@ const Gate=(function(){
     box.hidden=false; box.classList.add("closing-in");
     root.setAttribute("data-locked","");
     /* next time, the flight lands at home (not on the page you logged out from) */
-    history.replaceState(null,"","#home"); Home.open("home");
+    history.replaceState(history.state,"","#home"); Home.open("home");
     Universe.go("gate",{animate:false});
     setTimeout(()=>box.classList.remove("closing-in"),900);
   }

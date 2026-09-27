@@ -851,18 +851,15 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   c+=(texture(uTex,vUv+uStep*3.231).rgb+texture(uTex,vUv-uStep*3.231).rgb)*.07;
   o=vec4(c,1.); }`;
   /* a galaxy's volume, drawn at a lower resolution, spread over the full picture (it is soft light and dust) */
-  /* It filters by itself (a smooth cubic B-spline over 4×4 texels read exactly), never trusting the graphics
-     card to blend a half-float picture: some phones cannot, and then every texel of the volume showed as a
-     hard square (a staircase of black blocks along an edge-on galaxy's dust ring). */
+  /* It filters by itself (blending the four nearest texels, read exactly), never trusting the graphics card to
+     blend a half-float picture: some phones cannot, and then every texel of the volume showed as a hard square
+     (a staircase of black blocks along an edge-on galaxy's dust ring). Four reads: light enough for a phone */
   const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK, uSize;
-vec4 bs(float t){ float t2=t*t, t3=t2*t; return vec4(1.-3.*t+3.*t2-t3,4.-6.*t2+3.*t3,1.+3.*t+3.*t2-3.*t3,t3)/6.; }
 void main(){
-  vec2 q=gl_FragCoord.xy*uK*uSize-.5, i=floor(q), f=q-i;
-  vec4 wx=bs(f.x), wy=bs(f.y), s=vec4(0.); ivec2 hi=ivec2(uSize)-1, b=ivec2(i)-1;
-  for(int y=0;y<4;y++){ vec4 row=vec4(0.);
-    for(int x=0;x<4;x++) row+=texelFetch(uTex,clamp(b+ivec2(x,y),ivec2(0),hi),0)*wx[x];
-    s+=row*wy[y]; }
-  o=max(s,vec4(0.));
+  vec2 q=gl_FragCoord.xy*uK*uSize-.5, i=floor(q), f=q-i; ivec2 hi=ivec2(uSize)-1, b=ivec2(i);
+  vec4 a=texelFetch(uTex,clamp(b,ivec2(0),hi),0), c=texelFetch(uTex,clamp(b+ivec2(1,0),ivec2(0),hi),0);
+  vec4 d=texelFetch(uTex,clamp(b+ivec2(0,1),ivec2(0),hi),0), e=texelFetch(uTex,clamp(b+ivec2(1,1),ivec2(0),hi),0);
+  o=max(mix(mix(a,c,f.x),mix(d,e,f.x),f.y),vec4(0.));
 }`;
   /* the black hole lives here, in the last step, and it is traced, not painted: for every pixel
      near it, the ray of light is followed backwards along its real path in the curved space
@@ -1914,13 +1911,14 @@ void main(){
   new MutationObserver(need).observe(root,{attributes:true,attributeFilter:["class"]});
 
   /* ---------- moving the camera ---------- */
-  const easeInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+  /* soft at both ends, and no rush in the middle (its top speed is under twice the average; the cubic's was three times) */
+  const easeInOut=p=>p*p*p*(p*(p*6-15)+10);
   const easeOut=p=>1-Math.pow(1-p,3);
-  /* how long a flight takes: a little longer the farther it goes (to the Earth, far behind home, nearly five seconds) */
-  const flightTime=(a,b)=>Math.round(Math.min(4800,2200+6*Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)));
+  /* how long a flight takes: a little longer the farther it goes (to the Earth, far behind home, about five and a half seconds) */
+  const flightTime=(a,b)=>Math.round(Math.min(6500,2200+6.5*Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)));
   /* onArrive: when the flight is (nearly) there · onCancel: if another flight replaces it first */
   /* ---------- a flight's way: straight, unless something solid (the Earth, the Moon) stands on it ----------
-     Then it goes round: a point beside each one, far enough out (twice its radius from its centre, or
+     Then it goes round: a point beside each one, far enough out (2.6 times its radius from its centre, or
      as far as where the flight starts or ends, if that is nearer), and a smooth curve through them all
      (Catmull–Rom, spaced by length). The camera never passes through a world, as if it were painted */
   const V3={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],
@@ -1932,7 +1930,7 @@ void main(){
       const t=Math.max(0,Math.min(1,V3.dot(V3.sub(o.p,A),ab)/L2));
       if(t<=.02||t>=.98) return;
       const near=V3.add(A,V3.mul(ab,t)); let off=V3.sub(near,o.p), d=V3.len(off);
-      const need=Math.min(o.R*2,V3.len(V3.sub(A,o.p))*.98,V3.len(V3.sub(B,o.p))*.98);
+      const need=Math.min(o.R*2.6,V3.len(V3.sub(A,o.p))*.98,V3.len(V3.sub(B,o.p))*.98);
       if(d>=need) return;
       if(d<1e-3){ off=[ab[2],0,-ab[0]]; if(V3.len(off)<1e-6) off=[1,0,0]; d=0; }       /* dead ahead: go round its side */
       pts.push({t,p:V3.add(o.p,V3.mul(off,need*1.08/Math.max(V3.len(off),1e-9)))});
