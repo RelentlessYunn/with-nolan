@@ -10,13 +10,13 @@
    On mobile you can also switch tabs by swiping.
    ========================================================== */
 const Router=(function(){
-  /* the weekly timetable and the monthly planner share a tab */
+  /* today and the weekly timetable share a tab; the monthly planner has its own */
   const TABS={
-    schedule:["today","schedule","planner"], subjects:["subjects"],
+    schedule:["today","schedule"], planner:["planner"], subjects:["subjects"],
     exams:["exams"], tasks:["tasks"], faculty:["faculty"]
   };
   const PAGES=[];                                  /* pages without a tab (notes and settings now live in home) */
-  const ALIASES={horario:"schedule",hoy:"schedule",planificador:"schedule",asignaturas:"subjects",
+  const ALIASES={horario:"schedule",hoy:"schedule",planificador:"planner",mes:"planner",month:"planner",asignaturas:"subjects",
     calendario:"exams",pendientes:"tasks",profesorado:"faculty",notas:"notes",configuracion:"settings",ajustes:"settings"};
   const order=Object.keys(TABS);
   const links=$$("nav.bar a[data-tab]");

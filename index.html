@@ -39,25 +39,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <!-- the real Earth and Moon (wonders.js): fetched early, and kept by the offline copy (sw.js reads these addresses) -->
-<link rel="prefetch" href="img/earth-day.jpg?v=0.75" as="image">
-<link rel="prefetch" href="img/earth-aux.jpg?v=0.75" as="image">
-<link rel="prefetch" href="img/moon.jpg?v=0.75" as="image">
-<link rel="stylesheet" href="css/base.css?v=0.75">
-<link rel="stylesheet" href="css/sky.css?v=0.75">
-<link rel="stylesheet" href="css/header.css?v=0.75">
-<link rel="stylesheet" href="css/tabbar.css?v=0.75">
-<link rel="stylesheet" href="css/today.css?v=0.75">
-<link rel="stylesheet" href="css/schedule.css?v=0.75">
-<link rel="stylesheet" href="css/planner.css?v=0.75">
-<link rel="stylesheet" href="css/subjects.css?v=0.75">
-<link rel="stylesheet" href="css/exams.css?v=0.75">
-<link rel="stylesheet" href="css/tasks.css?v=0.75">
-<link rel="stylesheet" href="css/home.css?v=0.75">
-<link rel="stylesheet" href="css/nolan.css?v=0.75">
-<link rel="stylesheet" href="css/settings.css?v=0.75">
-<link rel="stylesheet" href="css/effects.css?v=0.75">
-<link rel="stylesheet" href="css/astral.css?v=0.75">
-<link rel="stylesheet" href="css/cinema.css?v=0.75">
+<link rel="prefetch" href="img/earth-day.jpg?v=0.76" as="image">
+<link rel="prefetch" href="img/earth-aux.jpg?v=0.76" as="image">
+<link rel="prefetch" href="img/moon.jpg?v=0.76" as="image">
+<link rel="stylesheet" href="css/base.css?v=0.76">
+<link rel="stylesheet" href="css/sky.css?v=0.76">
+<link rel="stylesheet" href="css/header.css?v=0.76">
+<link rel="stylesheet" href="css/tabbar.css?v=0.76">
+<link rel="stylesheet" href="css/today.css?v=0.76">
+<link rel="stylesheet" href="css/schedule.css?v=0.76">
+<link rel="stylesheet" href="css/planner.css?v=0.76">
+<link rel="stylesheet" href="css/subjects.css?v=0.76">
+<link rel="stylesheet" href="css/exams.css?v=0.76">
+<link rel="stylesheet" href="css/tasks.css?v=0.76">
+<link rel="stylesheet" href="css/home.css?v=0.76">
+<link rel="stylesheet" href="css/nolan.css?v=0.76">
+<link rel="stylesheet" href="css/settings.css?v=0.76">
+<link rel="stylesheet" href="css/effects.css?v=0.76">
+<link rel="stylesheet" href="css/astral.css?v=0.76">
+<link rel="stylesheet" href="css/cinema.css?v=0.76">
 </head>
 <body>
 <!-- the passage between two looks, when a setting reloads the page (js/shift.js) -->
@@ -165,6 +165,13 @@
         <circle class="f2" cx="17.3" cy="17.3" r="5"/>
         <path class="hand" d="M17.3 14.7v2.6l1.9 1.3"/>
       </svg></i><span class="tab-label" data-i18n="s.tab.schedule">Horario</span></a>
+    <a href="#planner" data-tab="planner" style="--ac:#4FD1E8">
+      <i class="tab-icon"><svg class="i-planner" viewBox="0 0 24 24" aria-hidden="true">
+        <rect class="f" x="3" y="4.2" width="18" height="16.6" rx="3"/>
+        <path d="M3 9h18M8 2.6v3.2M16 2.6v3.2"/>
+        <rect class="f2" x="6.6" y="12" width="3.4" height="3" rx=".8"/>
+        <path d="M13 13.5h4.4M6.6 17.6h10.8"/>
+      </svg></i><span class="tab-label" data-i18n="s.tab.planner">Mes</span></a>
     <a href="#subjects" data-tab="subjects" style="--ac:#A987FF">
       <i class="tab-icon"><svg class="i-subjects" viewBox="0 0 24 24" aria-hidden="true">
         <rect class="f" x="3" y="5.6" width="4.8" height="14.6" rx="1.3"/>
@@ -279,7 +286,7 @@
 
 </main>
 
-<footer><div class="wrap"><p class="version">v0.75</p></div></footer>
+<footer><div class="wrap"><p class="version">v0.76</p></div></footer>
 </div>
 <div id="debug"></div>
 
@@ -342,8 +349,8 @@
             <path d="M7 44h14"/>
             <g class="hook"><path d="M34 12v13"/><rect class="f" x="30" y="25" width="8" height="6.5" rx="1"/></g>
           </svg></span>
-          <span class="p-txt"><b>Nolan</b><span class="wip-tag" data-i18n="s.wip">En construcción</span></span>
-          <span class="p-info"><span data-i18n="s.nolanSoon">Pronto, con lo que me vayas contando.</span></span>
+          <span class="p-txt"><b>Nolan</b><span class="wip-tag" data-i18n="s.nolanCard">Tu mes</span></span>
+          <span class="p-info"><span data-i18n="s.nolanSoon">Tus exámenes y tus planes, mes a mes.</span></span>
           <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
         </a>
       </div>
@@ -379,40 +386,40 @@
      organizer (demo.js), never both. (The offline copy, sw.js, finds every file named here.) -->
 <script>
 document.write(document.documentElement.hasAttribute("data-guest")
-  ? '<script src="demo.js?v=0.75"><\/script>'
-  : '<script src="config.js?v=0.75" onerror="void 0"><\/script><script src="data.js?v=0.75"><\/script><script src="eval.js?v=0.75"><\/script>');
+  ? '<script src="demo.js?v=0.76"><\/script>'
+  : '<script src="config.js?v=0.76" onerror="void 0"><\/script><script src="data.js?v=0.76"><\/script><script src="eval.js?v=0.76"><\/script>');
 </script>
-<script src="js/prefs.js?v=0.75"></script>
-<script src="js/i18n.js?v=0.75"></script>
-<script src="js/core.js?v=0.75"></script>
-<script src="js/shift.js?v=0.75"></script>
-<script src="js/gate.js?v=0.75"></script>
-<script src="js/wonders.js?v=0.75"></script>
-<script src="js/universe.js?v=0.75"></script>
-<script src="js/sky.js?v=0.75"></script>
-<script src="js/validate.js?v=0.75"></script>
-<script src="js/derived.js?v=0.75"></script>
-<script src="js/cloud.js?v=0.75"></script>
-<script src="js/header.js?v=0.75"></script>
-<script src="js/astro.js?v=0.75"></script>
-<script src="js/weather.js?v=0.75"></script>
-<script src="js/schedule.js?v=0.75"></script>
-<script src="js/today.js?v=0.75"></script>
-<script src="js/subjects.js?v=0.75"></script>
-<script src="js/faculty.js?v=0.75"></script>
-<script src="js/ics.js?v=0.75"></script>
-<script src="js/exams.js?v=0.75"></script>
-<script src="js/tasks.js?v=0.75"></script>
-<script src="js/notes.js?v=0.75"></script>
-<script src="js/planner.js?v=0.75"></script>
-<script src="js/settings.js?v=0.75"></script>
-<script src="js/nolan.js?v=0.75"></script>
-<script src="js/home.js?v=0.75"></script>
-<script src="js/router.js?v=0.75"></script>
-<script src="js/view.js?v=0.75"></script>
-<script src="js/debug.js?v=0.75"></script>
-<script src="js/effects.js?v=0.75"></script>
-<script src="js/smooth.js?v=0.75"></script>
+<script src="js/prefs.js?v=0.76"></script>
+<script src="js/i18n.js?v=0.76"></script>
+<script src="js/core.js?v=0.76"></script>
+<script src="js/shift.js?v=0.76"></script>
+<script src="js/gate.js?v=0.76"></script>
+<script src="js/wonders.js?v=0.76"></script>
+<script src="js/universe.js?v=0.76"></script>
+<script src="js/sky.js?v=0.76"></script>
+<script src="js/validate.js?v=0.76"></script>
+<script src="js/derived.js?v=0.76"></script>
+<script src="js/cloud.js?v=0.76"></script>
+<script src="js/header.js?v=0.76"></script>
+<script src="js/astro.js?v=0.76"></script>
+<script src="js/weather.js?v=0.76"></script>
+<script src="js/schedule.js?v=0.76"></script>
+<script src="js/today.js?v=0.76"></script>
+<script src="js/subjects.js?v=0.76"></script>
+<script src="js/faculty.js?v=0.76"></script>
+<script src="js/ics.js?v=0.76"></script>
+<script src="js/exams.js?v=0.76"></script>
+<script src="js/tasks.js?v=0.76"></script>
+<script src="js/notes.js?v=0.76"></script>
+<script src="js/planner.js?v=0.76"></script>
+<script src="js/settings.js?v=0.76"></script>
+<script src="js/nolan.js?v=0.76"></script>
+<script src="js/home.js?v=0.76"></script>
+<script src="js/router.js?v=0.76"></script>
+<script src="js/view.js?v=0.76"></script>
+<script src="js/debug.js?v=0.76"></script>
+<script src="js/effects.js?v=0.76"></script>
+<script src="js/smooth.js?v=0.76"></script>
 <!-- the offline copy (sw.js): only when served over the web, not from a file -->
 <script>if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </body>

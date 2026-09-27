@@ -34,9 +34,9 @@ The site opens behind an entry screen (`js/gate.js`, styles in `css/cinema.css`)
 The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on a canvas behind everything (`js/universe.js`).
 
 - **Home is the Nolan galaxy.** After the PIN (or Guest) the camera flies from deep space, from behind the Earth, into home (about five and a half seconds, the far stars fading in around you) and stays there. Home's own galaxy is the blue spiral high on the right of its sky.
-- **Each section is a galaxy you can see from home**: UC3M (the golden barred spiral low on the left) and Nolan (under construction, the amber elliptical high on the left).
+- **Each section is a galaxy you can see from home**: UC3M (the golden barred spiral low on the left) and Nolan (his month calendar, the amber elliptical high on the left).
 - **Opening a section** flies the camera into its galaxy (`Home.enter(id, go)` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **A second click** (or Enter / Space) during the trip shows the section at once while the camera flies on to the end, so the sky never jumps (`Universe.skip()`). **Going home** flies back out.
-- **Worlds are real balls**: the Earth and the Moon are traced per pixel (each pixel's ray against a sphere, `ball()` in `wonders.js`), so seen up close or off to the side they keep their true shape; right beside the camera they are drawn over the whole screen, never popping. **Flights go round them** (`wayOf` in `universe.js`): when a flight's straight line would pass too near one (2.6 times its radius), a point beside it is added and the camera follows a smooth curve (Catmull–Rom) through such points. A real picture that arrives while one is on screen fades in over the procedural one (1.2 s).
+- **Worlds are real balls**: the Earth and the Moon are traced per pixel (each pixel's ray against a sphere, `ball()` in `wonders.js`), so seen up close or off to the side they keep their true shape; right beside the camera they are drawn over the whole screen, never popping. **Flights go round them** (`wayOf` in `universe.js`): when a flight's straight line would pass too near one (2.6 times its radius), the flight bows out instead: one smooth curve from start to end (a cubic Bézier whose two middle points are pushed sideways, just enough to clear every world in the way, travelled at even speed along its length). No corners, no change of direction. A real picture that arrives while one is on screen fades in over the procedural one (1.2 s).
 - **A flight takes the time its way needs**: `Universe.go` times it by its length (`flightTime`: 2.2 s plus a little per unit of distance, at most 6.5 s; back to the Earth, far behind home, about five and a half), eased softly at both ends with no rush in the middle (a quintic: its top speed under twice the average), unless it is given a duration (the flight after the PIN: 5.6 s; the opening from the Earth: 4.2 s). The last frame of a flight is always drawn, so the screen never stays on where it came from.
 - **The sights**: places the camera flies to and frames whole, one by one: the **Earth**, the **Moon**, the **black hole**, the **Whirlpool** (home's own galaxy), the **ring galaxy**, the **edge-on galaxy**, the **Orion Nebula**, the **Pleiades**, the **Ring Nebula**, the **vampire star** (the red giant feeding a white dwarf) and the **Antennae**. Routes `#earth`, `#moon`, `#blackhole`, `#whirlpool`, `#ringgalaxy`, `#edgeon`, `#orion`, `#pleiades`, `#ring`, `#binary`, `#antennae` (see *Home* for their pages).
   - `PLACES` in `universe.js` says where each one is and how big it looks (`p`, `R` in world units, `k` for a closer or wider look, and `turn` for a galaxy, see below). `layout()` fills it: the black hole with its whole disk, the galaxies of `SIGHT_GALAXIES` (`whirlpool`, `ringgalaxy`, `edgeon`: which galaxy, and how much of it to frame; the edge-on one as wide as its whole disk), and each wonder as big as it is drawn (the `sights` it declares in `wonders.js`).
@@ -148,14 +148,15 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 |---|---|
 | **Home** (house icon, `#home`; also where the app starts) | First screen: the time, a greeting and a weather card (now, high, low, rain, next sunrise/sunset) for where you are. Further down, where to go: the sections **UC3M** and **Nolan**, and the **sights** of the universe (see *Home*). The UC3M card sums up the week, the class now and the next assessment. Also buttons for just the sky, Notes and Settings. |
 | **Sights** (`#earth`, `#moon`, `#blackhole`, `#whirlpool`, `#ringgalaxy`, `#edgeon`, `#orion`, `#pleiades`, `#ring`, `#binary`, `#antennae`, inside home) | The camera flies to each one and frames it whole, with its name, a few words and arrows (or ← →) to the previous and the next. |
-| **Schedule** (`#schedule`) | *Today*: the day's classes with their room, the red "now" line and "X min left"; the next 7 days; the week's dates and advice. Below: weekly timetable and monthly planner. |
+| **Schedule** (`#schedule`) | *Today*: the day's classes with their room, the red "now" line and "X min left"; the next 7 days; the week's dates and advice. Below: the weekly timetable. |
+| **Month** (`#planner`) | The monthly planner of the whole year, in its own tab. |
 | **Subjects** (`#subjects`) | One card per subject: timetable and rooms, faculty, grading with a grade calculator, dates, and syllabus with progress. |
 | **Exams** (`#exams`) | Everything graded, with filters. Past items are dimmed. **Add to my calendar** (`js/ics.js`): downloads `nolan-uc3m.ics` with every exam and submission that has a day, for the phone's own calendar: Madrid time (with its time zone), reminders the day before and an hour before, windows of several days as all-day events that also warn the day before they close, and the same ID each time, so importing again updates instead of duplicating. Dates without a day stay out (the note says how many) until `data.js` has them. |
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
 | **Notes for Claude** (`#notes`, inside home) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
 | **Settings** (`#settings`, inside home) | Language (Spanish / English), **Smooth scrolling** (On / Off, off by default, `js/smooth.js`: the mouse wheel glides the page and anything scrolling under the pointer; trackpads, phones, text boxes and reduced motion are left as they are; no reload) and **Effects**, one choice for animations and quality together (`LOOKS` in `prefs.js`): High (the living 3D universe: animations all, quality high), Medium (a sky of stars you can fly through: all, medium) and Minimal (a plain background, nothing moves: none, low). Saved on each device. There is only the dark look (the light theme was removed in v0.52). Changing any of them reloads the page through a passage: the screen fades softly (≈0.4 s) to the colour of the empty night sky, not a flat black, the page reloads behind it and the new look fades in (`js/shift.js`). The fades run on the compositor, so the busy start of the page behind cannot make them stutter; while the passage covers the screen completely (`html.shift-dark`) the universe draws nothing but the one frame the passage waits for. The passage opens when the page is ready — the universe built and drawn, the saved data read, the font in — but never waits more than 2.5 s: a galaxy still being built then fades in by itself. At the bottom, the red button: Log out (for a guest: leave guest mode). |
-| **Nolan** (`#nolan`) | Under construction. |
+| **Nolan** (`#nolan`) | His month calendar: the exams plus his own plans (`PERSONAL` in `data.js`). |
 
 On mobile the tabs sit at the bottom and you can swipe between them.
 Old Spanish links (`#horario`, `#asignaturas`, `#notas`…) still work, and the old `#soon/andromeda` and `#soon/sombrero` links fly to the ring galaxy and the edge-on galaxy.
@@ -209,7 +210,7 @@ Each file does one thing. To change something you usually only need one or two.
 | `today.js` | The *Today* viewer (the red line and `#dayLive` are moved in place each minute). |
 | `subjects.js` | Subject cards and grade calculator (`subjectCard`, `recalc`). |
 | `ics.js` | "Add to my calendar": builds the `.ics` of every exam and submission (RFC 5545). |
-| `faculty.js` · `exams.js` · `tasks.js` · `notes.js` · `planner.js` · `settings.js` | One tab, page or block each. |
+| `faculty.js` · `exams.js` · `tasks.js` · `notes.js` · `planner.js` · `settings.js` | One tab, page or block each. `planner.js` is `makePlanner(box, {events, personal})`: the Month tab and Nolan's calendar are two of them. |
 | `nolan.js` | **The Nolan section.** Everything new for Nolan goes here. |
 | `home.js` | The home window: the hero, the section cards (UC3M / Nolan), the journey (`SIGHTS`, the tour's dock and its arrows) and each sight's page; Notes and Settings open inside it. |
 | `router.js` | Routes (`#schedule`, `#home`, `#nolan/…`, the sights; old `#soon/…` links go to the galaxies they were), tabs, the swipe gesture and the Escape key (back). It keeps a guest on home, its sights and Settings, and shows the page once it has chosen the first view (`data-booting`). |
@@ -244,7 +245,15 @@ Each one has its own mobile tweaks at the end.
 - If **the day is unknown**: use that week's Saturday and `noDay:1`. It shows as "semana N". A custom text can go in `label`.
 - If it **lasts several days** (an online test open Monday to Saturday): `until:"2026-10-31"`. The planner joins the first and last day with a line.
 - If it is **online**: `online:1`, so there is no warning that there is no class that day.
-- It shows up by itself in the subject card, *Today*, the planner, *Exams* and the week.
+- It shows up by itself in the subject card, *Today*, the planner, *Exams* and the week (and exams also in Nolan's calendar).
+
+**A personal plan** (Nolan's calendar only) → `data.js`, list `PERSONAL`, one line each:
+
+```js
+{date:"2026-10-12", what:"Cena con la familia", time:"21:00", place:"Casa", color:"#FFA640"},
+```
+
+Only `date` and `what` are needed; `until` (last day, for several days), `time`, `place`, `note` and `color` are optional. Nothing else to touch.
 
 **A class** → `data.js`, list `CLASSES`:
 
@@ -323,7 +332,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 ## Publishing a version
 
 1. Never publish two different versions under the same number: the offline copy keeps each file by its `?v=` for good, so a device would go on mixing the old files with the new page.
-2. Versions are numbered 0.49, 0.50…; the current one is **0.75**. Bump the number in `index.html`: the footer (`v0.75`) and every `?v=0.75` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
+2. Versions are numbered 0.49, 0.50…; the current one is **0.76**. Bump the number in `index.html`: the footer (`v0.76`) and every `?v=0.76` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
@@ -379,7 +388,7 @@ Ordered by how much it will be noticed.
 1. **Final exam dates.** The official windows are 16–22 December and 11–25 January. The days are missing; add them to `EVENTS` as soon as they are out.
 2. **Syllabus of each exam** (`syllabus` in `EVENTS`). It already shows in the detail panel when present.
 3. **Term 2.** The structure is ready: only the data is missing (see above).
-4. **Nolan.** Decide what it is and build it in `nolan.js`.
+4. **Nolan.** His month calendar is there; more of Nolan goes in `nolan.js`.
 5. **Term average.** With the calculator grades and the ECTS, the weighted average and what each final needs.
 6. **Fixed Madrid time**, even when the phone is in another time zone (travel).
 7. **Tests on GitHub.** Run `tests/run.js` with GitHub Actions on every upload.

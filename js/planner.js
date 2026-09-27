@@ -2,15 +2,16 @@
    planner.js — monthly calendar for the whole year (from CALENDAR.year),
    with periods, holidays, week numbers, yellow "done" days and the dates
    of EVENTS as chips that open their detail.
+   makePlanner(box, {detail, events, personal}) draws one: UC3M's (its own tab,
+   every event) and Nolan's (the exams and PERSONAL, from data.js).
    ========================================================== */
-(function(){
+function makePlanner(box,{detail="planner-detail",events=EVENTS,personal=[]}={}){
   /* months of the academic year */
   const months=[];
   for(let d=fromISO(CALENDAR.year.from.slice(0,8)+"01"); isoDate(d)<=CALENDAR.year.to; d.setMonth(d.getMonth()+1))
     months.push({y:d.getFullYear(),m:d.getMonth()});
   const indexOf=k=>{ const d=fromISO(k), i=months.findIndex(mo=>mo.y===d.getFullYear()&&mo.m===d.getMonth()); return i<0?0:i; };
   let current=indexOf(todayISO());
-  const box=$("#planner-grid");
 
   /* teaching week number, only on each row's Monday */
   const weekTag=k=>{
@@ -19,6 +20,8 @@
     return w?`<div class="m-wk">${t("planner.weekTag",{n:w.n})}</div>`:"";
   };
   const chip=(e,closing)=>{
+    if(e.personal) return `<button class="m-chip personal" data-pe="${personal.indexOf(e)}" style="--sc:${e.color||"#FFA640"}" `+
+      `aria-label="${esc(e.what+(e.time?", "+e.time:""))}"><i></i><span>${esc(e.what)}</span></button>`;
     const S=SUBJECTS[e.subject];
     const label=t("event.title",{type:typeName(e.type),subject:S.name})+(e.noDay?", "+t("event.noDay"):"")+(closing?", "+t("planner.closes"):"");
     const opens=!closing&&!e.noDay&&e.until&&e.until>e.date;   /* a window of several days starts here */
@@ -29,7 +32,9 @@
   /* windows of several days (an online test, a submission…): a line in the
      subject's colour joins the opening chip to the closing one, across the
      days in between. They go first in each day so the lines line up. */
-  const spans=EVENTS.filter(e=>!e.noDay&&e.until&&e.until>e.date).sort(byDate);
+  const all=events.concat(personal.map(e=>({...e,personal:1}))).sort(byDate);
+  personal=all.filter(e=>e.personal);
+  const spans=events.filter(e=>!e.noDay&&e.until&&e.until>e.date).sort(byDate);
   const link=e=>`<i class="m-link" style="--sc:${SUBJECTS[e.subject].color}" aria-hidden="true"></i>`;
   /* what a day shows for those windows: the chips on the first and last day, a line on the others */
   const spanItems=(k,chips)=>spans.filter(e=>e.date<=k&&e.until>=k)
@@ -67,27 +72,41 @@
       if(mark) tag=`<div class="m-tag mark">${esc(mark.label)}</div>`+tag;
       /* the chip goes on its date; windows of several days also get one on the closing day */
       const chips=spanItems(k,true)
-        .concat(EVENTS.filter(e=>e.date===k&&!spans.includes(e)).map(e=>chip(e)));
+        .concat(all.filter(e=>e.date===k&&!spans.includes(e)).map(e=>chip(e)));
       html+=`<div class="${cls}"${k===today?' aria-current="date"':""}>${weekTag(k)}<div class="m-date">${d}</div>${tag}${chips.join("")}</div>`;
     }
     const rest=(lead+total)%7;
     if(rest) for(let i=1;i<=7-rest;i++) html+=outside(new Date(mo.y,mo.m+1,i));
-    box.innerHTML=html+'</div></div><div id="planner-detail" class="ev-detail" hidden></div>';
+    box.innerHTML=html+`</div></div><div id="${detail}" class="ev-detail" hidden></div>`;
   }
 
   box.addEventListener("click",ev=>{
     const c=ev.target.closest(".m-chip");
-    if(c){ showDetail("planner-detail",EVENTS[+c.dataset.ev]); return; }
+    if(c){ if(c.dataset.pe) showPersonal(personal[+c.dataset.pe]); else showDetail(detail,EVENTS[+c.dataset.ev]); return; }
     const b=ev.target.closest("[data-go]"); if(!b) return;
     if(b.dataset.go==="today") current=indexOf(todayISO());
     else { const n=current+(+b.dataset.go); if(n<0||n>=months.length) return; current=n; }
     render();
   });
-  closeDetailOn("planner-detail",".m-chip");
+  closeDetailOn(detail,".m-chip");
+  /* a personal plan: what, when, where, a note */
+  function showPersonal(e){
+    const d=document.getElementById(detail); if(!d) return;
+    const rows=[[t("detail.when"),(e.until?fmtRange(fromISO(e.date),fromISO(e.until)):fmtLong(fromISO(e.date)))+(e.time?" · "+e.time:"")]];
+    if(e.place) rows.push([t("detail.where"),e.place]);
+    d.hidden=false; d.style.borderLeftColor=e.color||"#FFA640";
+    d.innerHTML=`<div class="ev-head"><b style="color:${e.color||"#FFA640"}">${esc(e.what)}</b>`+
+      `<button class="ev-close" aria-label="${esc(t("close"))}">×</button></div>`+
+      `<dl class="ev-dl">`+rows.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join("")+`</dl>`+
+      (e.note?`<p>${esc(e.note)}</p>`:"");
+    d.scrollIntoView({block:"nearest",behavior:lowMotion()?"auto":"smooth"});
+  }
   /* at midnight the today box and the yellow move on; if you were on today's month, it follows */
   document.addEventListener("newDay",e=>{
     if(current===indexOf(addDays(e.detail,-1))) current=indexOf(e.detail);
     render();
   });
   render();
-})();
+  return {render};
+}
+makePlanner($("#planner-grid"));

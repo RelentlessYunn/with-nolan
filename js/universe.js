@@ -99,7 +99,7 @@ const Universe=(function(){
       rot:{vmax:.03, ac:.06, pat:-.01},              /* lively: it turns visibly while you look */
       stars:{old:26000, young:9000, hii:800, bulge:9000, halo:1200, gc:9},
       gain:{disk:.66, young:.6, hii:.5, dust:2.2, bulge:1, stars:1}},
-    /* Nolan (under construction): a big round ember, an amber elliptical */
+    /* Nolan: a big round ember, an amber elliptical */
     forge:{kind:"elliptical", star:"255,176,96", r:3.1, tilt:.6, roll:-.2, at:{d:[-.66,-.5],m:[-.62,-.74]}, z:75, seed:37,
       bulge:{I:.3, Rb:.26, n:3, q:[1,.86,.72]},
       col:{old:[1,.74,.48], core:[1,.76,.5]},
@@ -1941,37 +1941,49 @@ void main(){
   const flightTime=(a,b)=>Math.round(Math.min(6500,2200+6.5*Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)));
   /* onArrive: when the flight is (nearly) there · onCancel: if another flight replaces it first */
   /* ---------- a flight's way: straight, unless something solid (the Earth, the Moon) stands on it ----------
-     Then it goes round: a point beside each one, far enough out (2.6 times its radius from its centre, or
-     as far as where the flight starts or ends, if that is nearer), and a smooth curve through them all
-     (Catmull–Rom, spaced by length). The camera never passes through a world, as if it were painted */
+     Then it bows out: one smooth curve from start to end (a cubic Bézier whose two middle points are pushed
+     sideways), bent just enough to pass each world at 2.6 times its radius (or as far as where the flight
+     starts or ends, if that is nearer). One curve, no corners: the camera never turns, it only leans */
   const V3={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],
     dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], len:a=>Math.hypot(a[0],a[1],a[2])};
   function wayOf(a,b){
     const A=[a.x,a.y,a.z], B=[b.x,b.y,b.z], ab=V3.sub(B,A), L2=V3.dot(ab,ab);
-    const pts=[];
+    const hits=[];
     if(L2>1e-6) EXTRAS.forEach(x=>(x.solids||[]).forEach(o=>{
       const t=Math.max(0,Math.min(1,V3.dot(V3.sub(o.p,A),ab)/L2));
       if(t<=.02||t>=.98) return;
-      const near=V3.add(A,V3.mul(ab,t)); let off=V3.sub(near,o.p), d=V3.len(off);
-      const need=Math.min(o.R*2.6,V3.len(V3.sub(A,o.p))*.98,V3.len(V3.sub(B,o.p))*.98);
-      if(d>=need) return;
-      if(d<1e-3){ off=[ab[2],0,-ab[0]]; if(V3.len(off)<1e-6) off=[1,0,0]; d=0; }       /* dead ahead: go round its side */
-      pts.push({t,p:V3.add(o.p,V3.mul(off,need*1.08/Math.max(V3.len(off),1e-9)))});
+      let off=V3.sub(V3.add(A,V3.mul(ab,t)),o.p);
+      const need=1.08*Math.min(o.R*2.6,V3.len(V3.sub(A,o.p))*.98,V3.len(V3.sub(B,o.p))*.98);
+      if(V3.len(off)>=need) return;
+      if(V3.len(off)<1e-3){ off=[ab[2]*1e-3,0,-ab[0]*1e-3]; if(V3.len(off)<1e-9) off=[1e-3,0,0]; }   /* dead ahead: round its side */
+      hits.push({t,off,need});
     }));
-    if(!pts.length) return null;
-    pts.sort((u,v)=>u.t-v.t);
-    const P=[A,...pts.map(q=>q.p),B], seg=[];
-    let tot=0; for(let i=1;i<P.length;i++){ const l=V3.len(V3.sub(P[i],P[i-1])); seg.push(l); tot+=l; }
-    return {P,seg,tot};
+    if(!hits.length) return null;
+    /* which way to lean: away from them all, the tighter ones counting more */
+    let dir=[0,0,0]; hits.forEach(h=>{ dir=V3.add(dir,V3.mul(h.off,(h.need-V3.len(h.off))/V3.len(h.off))); });
+    if(V3.len(dir)<1e-6) dir=hits[0].off;
+    dir=V3.mul(dir,1/V3.len(dir));
+    /* how far: at each one's place t the curve sits 3t(1-t)·k to the side; enough for the tightest */
+    let k=0;
+    hits.forEach(h=>{
+      const od=V3.dot(h.off,dir), s=-od+Math.sqrt(Math.max(0,od*od-V3.dot(h.off,h.off)+h.need*h.need));
+      const tt=Math.max(.15,Math.min(.85,h.t));
+      k=Math.max(k,s/(3*tt*(1-tt)));
+    });
+    const C1=V3.add(V3.add(A,V3.mul(ab,1/3)),V3.mul(dir,k)), C2=V3.add(V3.add(A,V3.mul(ab,2/3)),V3.mul(dir,k));
+    const at=u=>{ const v=1-u, w0=v*v*v, w1=3*v*v*u, w2=3*v*u*u, w3=u*u*u;
+      return [0,1,2].map(i=>w0*A[i]+w1*C1[i]+w2*C2[i]+w3*B[i]); };
+    /* spaced by length, so the speed along it is the easing's alone */
+    const N=64, len=[0]; let prev=A;
+    for(let i=1;i<=N;i++){ const q=at(i/N); len.push(len[i-1]+V3.len(V3.sub(q,prev))); prev=q; }
+    return {at,len,N,tot:len[N]};
   }
   /* where on that curve, a share e of the way along it */
   function alongWay(w,e){
-    let s=e*w.tot, i=0;
-    while(i<w.seg.length-1&&s>w.seg[i]){ s-=w.seg[i]; i++; }
-    const u=Math.max(0,Math.min(1,s/(w.seg[i]||1))), P=w.P;
-    const p0=P[Math.max(0,i-1)], p1=P[i], p2=P[i+1], p3=P[Math.min(P.length-1,i+2)];
-    const u2=u*u, u3=u2*u;
-    return [0,1,2].map(k=>.5*((2*p1[k])+(-p0[k]+p2[k])*u+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*u2+(-p0[k]+3*p1[k]-3*p2[k]+p3[k])*u3));
+    const s=Math.max(0,Math.min(1,e))*w.tot, L=w.len;
+    let i=1; while(i<w.N&&L[i]<s) i++;
+    const f=(s-L[i-1])/Math.max(1e-9,L[i]-L[i-1]);
+    return w.at((i-1+Math.max(0,Math.min(1,f)))/w.N);
   }
 
   function go(to,{animate=true,duration,onArrive,onCancel,arriveAt=.85}={}){

@@ -391,7 +391,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
 
   section("Planner");
   {
-    const p=await open(b,{time:"2026-10-20T10:00:00"});
+    const p=await open(b,{hash:"planner",time:"2026-10-20T10:00:00"});
     const r=await p.evaluate(()=>({opens:document.querySelectorAll("#planner-grid .m-chip.opens").length,
       closes:document.querySelectorAll("#planner-grid .m-chip.closing").length,links:document.querySelectorAll("#planner-grid .m-link").length}));
     ok(r.opens===1&&r.closes===1&&r.links===4,`a window of several days (26–31 Oct) is joined by a line (${r.links} days in between)`);
@@ -449,7 +449,9 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       &&getComputedStyle(document.querySelector("body > div.wrap")).opacity==="1"&&location.hash==="#subjects");
     ok(v.on&&v.exit&&v.page==="0"&&v.header==="none"&&back,`the eye button shows just the sky, and Escape brings everything back (${JSON.stringify(v)})`);
     await p.goto(PAGE+"#nolan"); await p.waitForTimeout(600);
-    ok(await p.evaluate(()=>!document.getElementById("nolanView").hidden),"#nolan opens the Nolan section");
+    const n=await p.evaluate(()=>({shown:!document.getElementById("nolanView").hidden,month:!!document.querySelector("#nolan-grid .m-grid.days"),
+      other:document.querySelectorAll("#nolan-grid .m-chip:not(.ex):not(.personal)").length}));
+    ok(n.shown&&n.month&&n.other===0,`#nolan opens Nolan's month calendar, with only exams and his own plans (${JSON.stringify(n)})`);
     await p.context().close();
   }
 

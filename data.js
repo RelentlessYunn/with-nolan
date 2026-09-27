@@ -189,3 +189,10 @@ const TASKS={
  dcp:[["Confirmar el día del cuestionario de autoevaluación","En la web está el miércoles 4 de noviembre (semana 9), pero la guía docente lo pone en la semana 8. Pregúntalo en clase o mira Aula Global."]],
  est:[]
 };
+
+/* Nolan's own plans, shown in his month calendar (#nolan) next to the exams.
+   One line each: date "YYYY-MM-DD" and what; optional until (last day, for several days),
+   time, place, note, color. Example:
+   {date:"2026-10-12", what:"Cena con la familia", time:"21:00", place:"Casa", color:"#FFA640"}, */
+const PERSONAL=[
+];

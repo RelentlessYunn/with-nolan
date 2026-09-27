@@ -84,7 +84,7 @@ es:{
   "home.night":"Buenas noches", "home.morning":"Buenos días", "home.afternoon":"Buenas tardes", "home.greeting":"{hello}, {name}",
   "home.now":"Ahora: {subject} · {time} · {room}", "home.next":"Siguiente: {subject} · {time} · {room}",
   "home.doneToday":"Clases de hoy terminadas", "home.noClassToday":"Hoy no tienes clase.", "home.nextExam":"{type} de {subject}: {when}",
-  "nolan.wip":"En construcción. Aquí irá lo que me indiques.", "nolan.back":"← Volver al inicio",
+  "nolan.lead":"Tus exámenes y tus planes, mes a mes. Pulsa uno para ver el detalle.", "nolan.back":"← Volver al inicio",
   /* cloud */
   "gate.title":"Introduce el PIN", "gate.wrong":"PIN incorrecto", "gate.delete":"Borrar",
   "gate.guest":"Invitado", "gate.pinAria":"Entrar con el PIN", "home.greetingGuest":"{hello}, invitado",
@@ -132,7 +132,7 @@ es:{
   /* ---- static texts of index.html ---- */
   "s.home":"Inicio", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (se abre en otra pestaña)",
   "s.notes":"Notas", "s.settings":"Configuración", "s.sections":"Secciones",
-  "s.tab.schedule":"Horario", "s.tab.subjects":"Asignaturas", "s.tab.exams":"Exámenes", "s.tab.tasks":"Pendientes", "s.tab.faculty":"Profesorado",
+  "s.tab.schedule":"Horario", "s.tab.planner":"Mes", "s.tab.subjects":"Asignaturas", "s.tab.exams":"Exámenes", "s.tab.tasks":"Pendientes", "s.tab.faculty":"Profesorado",
   "s.closeWarning":"Cerrar aviso", "s.prevDay":"Día anterior", "s.nextDay":"Día siguiente",
   "s.schedule.title":"Horario semanal", "s.schedule.lead":"Cada asignatura tiene su color y lo mantiene en toda la página.",
   "s.planner.title":"Planificador mensual", "s.planner.lead":"Todo el curso, de septiembre a junio. Pulsa cualquier evento para ver el detalle.",
@@ -151,7 +151,7 @@ es:{
   "s.hello":"Hola, Nolan", "s.uc3m":"UC3M", "s.uc3m@guest":"Universidad", "s.secondYear@guest":"Demo · ", "s.brand@guest":"Nolan · Demo · ",
   "s.faculty.lead@guest":"Profesorado inventado para la demo, con correos de ejemplo.", "s.planner.lead@guest":"Todo el curso. Pulsa cualquier evento para ver el detalle.",
   "s.tasks.lead@guest":"En la demo se quedan mientras la página esté abierta.", "s.whereTo":"¿A dónde vamos?", "s.secondYear":"Segundo de carrera · ", "s.enter":"Entrar",
-  "s.wip":"En construcción", "s.nolanSoon":"Pronto, con lo que me vayas contando.", "s.view":"Ver",
+  "s.nolanCard":"Tu mes", "s.nolanSoon":"Tus exámenes y tus planes, mes a mes.", "s.view":"Ver",
   /* settings */
   "s.settings.lead":"Se guarda en este dispositivo.",
   "s.set.lang":"Idioma", "s.set.langHelp":"Toda la interfaz. Los textos de las asignaturas (evaluación, consejos, temario) siguen en español.",
@@ -217,7 +217,7 @@ en:{
   "home.night":"Good evening", "home.morning":"Good morning", "home.afternoon":"Good afternoon", "home.greeting":"{hello}, {name}",
   "home.now":"Now: {subject} · {time} · {room}", "home.next":"Next: {subject} · {time} · {room}",
   "home.doneToday":"Today's classes are over", "home.noClassToday":"No class today.", "home.nextExam":"{type} · {subject}: {when}",
-  "nolan.wip":"Under construction. Whatever you tell me will go here.", "nolan.back":"← Back to home",
+  "nolan.lead":"Your exams and your plans, month by month. Tap one to see the details.", "nolan.back":"← Back to home",
   "gate.title":"Enter your PIN", "gate.wrong":"Wrong PIN", "gate.delete":"Delete",
   "gate.guest":"Guest", "gate.pinAria":"Enter with the PIN", "home.greetingGuest":"{hello}, guest",
   "s.guestExit":"Leave guest mode", "s.guestExitHelp":"Back to the entry screen.",
@@ -262,7 +262,7 @@ en:{
 
   "s.home":"Home", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (opens in a new tab)",
   "s.notes":"Notes", "s.settings":"Settings", "s.sections":"Sections",
-  "s.tab.schedule":"Schedule", "s.tab.subjects":"Subjects", "s.tab.exams":"Exams", "s.tab.tasks":"Tasks", "s.tab.faculty":"Faculty",
+  "s.tab.schedule":"Schedule", "s.tab.planner":"Month", "s.tab.subjects":"Subjects", "s.tab.exams":"Exams", "s.tab.tasks":"Tasks", "s.tab.faculty":"Faculty",
   "s.closeWarning":"Close warning", "s.prevDay":"Previous day", "s.nextDay":"Next day",
   "s.schedule.title":"Weekly timetable", "s.schedule.lead":"Each subject has its own colour and keeps it across the whole page.",
   "s.planner.title":"Monthly planner", "s.planner.lead":"The whole year, from September to June. Tap any event to see its details.",
@@ -281,7 +281,7 @@ en:{
   "s.hello":"Hi, Nolan", "s.uc3m":"UC3M", "s.uc3m@guest":"University", "s.secondYear@guest":"Demo · ", "s.brand@guest":"Nolan · Demo · ",
   "s.faculty.lead@guest":"Invented faculty for the demo, with example addresses.", "s.planner.lead@guest":"The whole year. Tap any event to see its details.",
   "s.tasks.lead@guest":"In the demo they stay while the page is open.", "s.whereTo":"Where to?", "s.secondYear":"Second year · ", "s.enter":"Enter",
-  "s.wip":"Under construction", "s.nolanSoon":"Coming soon, with whatever you tell me.", "s.view":"View",
+  "s.nolanCard":"Your month", "s.nolanSoon":"Your exams and your plans, month by month.", "s.view":"View",
   "s.settings.lead":"Saved on this device.",
   "s.set.lang":"Language", "s.set.langHelp":"The whole interface. Subject texts (grading, advice, syllabus) stay in Spanish.",
   "s.set.scroll":"Smooth scrolling", "s.set.scrollHelp":"The mouse wheel glides the page smoothly instead of in jumps. On phones and trackpads it is already smooth.", "s.set.scroll.smooth":"On", "s.set.scroll.native":"Off",
