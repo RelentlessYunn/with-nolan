@@ -1623,7 +1623,8 @@ void main(){
     gl.uniform1f(u.uFpx,F*scale);
     /* the Earth and the Moon, when nearer than the hole: it is not traced where they stand */
     const occ=bh?occluders.filter(o=>o.d<bh.d).sort((a,b)=>b.r-a.r):[];
-    for(let i=0;i<2;i++){ const o=occ[i]; gl.uniform4f(gl.getUniformLocation(P.comp.p,"uOcc["+i+"]"),o?o.x*scale:0,o?(H-o.y)*scale:0,o?o.r*scale:0,o?1:0); }
+    const occAt=P.comp.occ||(P.comp.occ=[0,1].map(i=>gl.getUniformLocation(P.comp.p,"uOcc["+i+"]")));   /* (looked up once) */
+    for(let i=0;i<2;i++){ const o=occ[i]; gl.uniform4f(occAt[i],o?o.x*scale:0,o?(H-o.y)*scale:0,o?o.r*scale:0,o?1:0); }
     full();
     gl.activeTexture(gl.TEXTURE0);
   }
@@ -1658,8 +1659,30 @@ void main(){
     }
     return e.t;
   }
+  /* a picture a wonder paints once on the graphics card (its fragment shader over the whole of it, given vUv),
+     mipmapped and repeating sideways: for what is costly to work out per pixel and frame, like the Earth's
+     clouds. Kept by its source; after a lost context it is painted again */
+  let baked={};
+  function bake(fs,w,h){
+    let e=baked[fs];
+    if(e) return e.t;
+    e=baked[fs]={t:null};
+    try{
+      const pr=compile(FULL_VS,HEAD+NOISE+fs); finish(pr);
+      const tg=target(w,h,"rgba8");
+      gl.viewport(0,0,w,h); gl.disable(gl.BLEND); gl.useProgram(pr.p); full();
+      gl.bindTexture(gl.TEXTURE_2D,tg.t); gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+      gl.bindTexture(gl.TEXTURE_2D,null); gl.deleteFramebuffer(tg.f); gl.deleteProgram(pr.p);
+      /* back to the picture being drawn */
+      gl.bindFramebuffer(gl.FRAMEBUFFER,hdr.f); gl.viewport(0,0,RW,RH); gl.enable(gl.BLEND);
+      e.t=tg.t;
+    }catch(err){ console.warn("universe: bake",err.message); }
+    return e.t;
+  }
   const api={
-    image, bind(unit,t){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,t); gl.activeTexture(gl.TEXTURE0); },
+    image, bake, bind(unit,t){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,t); gl.activeTexture(gl.TEXTURE0); },
     get gl(){ return gl; }, get W(){ return W; }, get H(){ return H; }, get F(){ return F; }, get scale(){ return scale; },
     get fade(){ return starsFade; }, get phone(){ return phone; }, get robot(){ return robot; }, get scene(){ return scene; },
     get cam(){ return cam; }, get camR(){ return camR; },
@@ -2029,7 +2052,7 @@ void main(){
     if(gl){
       cv.addEventListener("webglcontextlost",e=>{ e.preventDefault(); lost=true; ok=false; });
       cv.addEventListener("webglcontextrestored",()=>{
-        lost=false; P={}; hdr=bloomA=bloomB=volT=null; RW=RH=1; images={};
+        lost=false; P={}; hdr=bloomA=bloomB=volT=null; RW=RH=1; images={}; baked={};
         Object.keys(G).forEach(k=>delete G[k]);
         try{ if(initGL()){ compileAll(); whenCompiled(()=>{ hdr=null; sizeTargets(); buildSky(); ok=true; startBuilding(); need(); },giveUp); } }catch(e){ giveUp(e); }
       });

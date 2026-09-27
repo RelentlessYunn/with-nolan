@@ -309,6 +309,27 @@ void main(){
      sight of its own (its sphere and a little of its air) */
   const EARTH_P=[-21,13,-392], EARTH_R=15, MOON_P=[22,-16,-350], MOON_R=4.5;
   const swap={};                                       /* when each real picture arrived (to fade it in) */
+  /* the Earth's clouds painted once round the globe (longitude across, latitude up): its shader reads them */
+  const CLOUD_FS=N3+`
+/* the clouds at a point (their own frame, drifting): where the climate makes them, the tropics' line of
+   storms and the storm tracks of middle latitudes; few over the deserts of the belts between; wisps and
+   curling fronts rather than balls */
+float cloudAt(vec3 cs,bool full){
+  /* (the shadows only need the clouds' rough shape: fewer layers of noise, so the Earth stays light to draw) */
+  int o1=full?3:2, o2=full?5:3;
+  vec3 cw=vec3(fbm3(cs*2.6+1.,o1),fbm3(cs*2.6+4.,o1),fbm3(cs*2.6+8.,o1))-.5;
+  float la=asin(clamp(cs.y,-1.,1.));
+  float belt=exp(-pow(la/.13,2.))*.75+exp(-pow((abs(la)-.9)/.28,2.));
+  float base=fbm3(cs*vec3(3.6,5.2,3.6)+cw*2.4,o2);
+  float c=smoothstep(.56-.13*belt,.78-.1*belt,base);
+  return c*(full?.45+.55*fbm3(cs*22.+cw*4.,2):.75)*.9;
+}
+in vec2 vUv; out vec4 o;
+void main(){
+  float lon=(vUv.x-.5)*6.2831853, lat=(vUv.y-.5)*3.1415927;
+  vec3 s=vec3(cos(lat)*sin(lon),sin(lat),-cos(lat)*cos(lon));
+  o=vec4(cloudAt(s,true),0.,0.,1.);
+}`;
   const earth={id:"earth",early:true,
     /* its pictures start loading at once: the first flight begins beside it */
     layout(api){ ["earth-day.jpg","earth-aux.jpg","moon.jpg"].concat(api.phone?[]:["moon-4k.jpg"]).forEach(n=>api.image(IMG(n))); },
@@ -319,6 +340,7 @@ void main(){
 uniform vec3 uL;      /* where the sunlight comes from */
 uniform float uSpin;
 uniform sampler2D uDay, uAux;  /* the real Earth (NASA's Blue Marble), and its night lights, seas and heights */
+uniform sampler2D uCloud; uniform float uCl;   /* its clouds, painted once (a map round the globe), when ready */
 uniform float uTex, uLod;      /* whether they are here; how blurred to read them (the Earth's size on the screen) */
 /* a real ball, traced per pixel: the ray of this pixel from the camera, against a sphere (its centre in the
    camera's axes, x right, y down, z ahead; its radius). Seen up close or off to the side it keeps its true
@@ -405,11 +427,17 @@ void main(){
     }
     /* clouds: their own slow drift over the ground, in swirls and long bands */
     vec3 cs=turnS(n,uSpin*1.18+uT*.004);
-    float cl=cloudAt(cs,true);
+    /* the clouds: read from their map (painted once: the same field, a few reads instead of dozens of layers of
+       noise per pixel and frame); its shadow a little towards the Sun */
+    vec2 cuv=vec2(.5+atan(cs.x,-cs.z)/6.2831853,.5+asin(clamp(cs.y,-1.,1.))/3.1415927);
+    vec3 csh=turnS(normalize(n+L*.01),uSpin*1.18+uT*.004);
+    vec2 cuv2=vec2(.5+atan(csh.x,-csh.z)/6.2831853,.5+asin(clamp(csh.y,-1.,1.))/3.1415927);
+    float clod=uLod-.4+.5*log2(1./max(dot(n,-d),.1));
+    float cl=uCl>.5?textureLod(uCloud,cuv,clod).r:cloudAt(cs,true);
     /* sunlight: reddened where it grazes the ground; the clouds' shadows fall just beside them */
     float sunL=max(rmu,0.);
     vec3 sunC=mix(vec3(1.,.42,.18),vec3(1.,.97,.93),smoothstep(0.,.3,mu));
-    float shade=1.-.45*cloudAt(turnS(normalize(n+L*.01),uSpin*1.18+uT*.004),false);
+    float shade=1.-.45*(uCl>.5?textureLod(uCloud,cuv2,clod+.8).r:cloudAt(csh,false));
     vec3 dayC=mix(surf*shade*(sunL*1.2+.015),vec3(.96,.97,1.)*(max(mu,0.)*1.2+.015),cl)*sunC;
     /* the Sun's glint on the sea: a sharp spot in a wider sheen, hidden under clouds */
     vec3 v=-d, hv=normalize(L+v); float nh=max(dot(n,hv),0.);
@@ -419,7 +447,7 @@ void main(){
     /* city lights */
     nightC+=vec3(1.,.66,.3)*lights*(1.-cl*.8)*(1.-day);
     /* auroras round the poles, over the night: thin green curtains, crimson at their tops */
-    float ring=exp(-pow((lat-.87+.015*sin(atan(s.z,s.x)*5.+uT*.05))/.03,2.)), ray=pow(fbm3(s*vec3(22.,2.,22.)+vec3(0.,uT*.15,0.),4),2.5);
+    float ring=exp(-pow((lat-.87+.015*sin(atan(s.z,s.x)*5.+uT*.05))/.03,2.)), ray=ring*(1.-day)>.002?pow(fbm3(s*vec3(22.,2.,22.)+vec3(0.,uT*.15,0.),4),2.5):0.;   /* (its noise only where there is one) */
     nightC+=mix(vec3(.25,1.,.55),vec3(.95,.25,.45),smoothstep(.87,.91,lat))*ring*ray*(1.-day)*.6;
     C=dayC+nightC; a=1.;
     /* the air seen through: a blue haze, thicker towards the edge, over the day side */
@@ -551,11 +579,14 @@ void main(){
         if(real&&!swap.earth) swap.earth=swap.earthSeen?now:-1e9;      /* (ready before it was ever seen: nothing to fade) */
         swap.earthSeen=true;
         const k=real?mix(swap.earth):0;
+        const clouds=api.bake&&api.bake(CLOUD_FS,api.phone?1024:2048,api.phone?512:1024);
         const one=(tex,alpha)=>{
           const u=api.sprite(earth.prog.main,e.x,e.y,e.h,e.h,0);
           place(u,e,EARTH_R);
           set(u,"uL",.72,-.3,-.62); set(u,"uSpin",t*.05); set(u,"uT",t); set(u,"uA",alpha); set(u,"uS",3.7);
           if(tex){ api.bind(4,td); api.bind(5,ta); api.gl.uniform1i(u.uDay,4); api.gl.uniform1i(u.uAux,5); }
+          if(clouds){ api.bind(6,clouds); api.gl.uniform1i(u.uCloud,6); }
+          set(u,"uCl",clouds?1:0);
           set(u,"uTex",tex?1:0); set(u,"uLod",lodFor(e.r,2048));
           api.over(); api.draw();
         };
@@ -565,7 +596,9 @@ void main(){
       const drawMoon=m=>{
         /* as it hangs in tonight's sky over Getafe: lit from where the Sun is (its phase, and which edge is
            bright), and turned as it stands in the sky (Astro.moonSky); up on the screen is up in the sky */
-        const sky=typeof Astro!=="undefined"&&Astro.moonSky?Astro.moonSky(new Date(),40.305,-3.731):{inc:Math.PI/2,chi:-Math.PI/2,q:0};
+        /* (worked out once a second: it changes over minutes) */
+        if(!swap.sky||now-swap.skyAt>1000){ swap.sky=typeof Astro!=="undefined"&&Astro.moonSky?Astro.moonSky(new Date(),40.305,-3.731):{inc:Math.PI/2,chi:-Math.PI/2,q:0}; swap.skyAt=now; }
+        const sky=swap.sky;
         const w=sky.q-sky.chi, si=Math.sin(sky.inc);
         /* the sharper map on a computer (a phone keeps the lighter one); each one fades in over the last */
         const big=!api.phone&&api.image(IMG("moon-4k.jpg")), small=api.image(IMG("moon.jpg")), tm=big||small;

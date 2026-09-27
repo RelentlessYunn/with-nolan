@@ -12,7 +12,7 @@
   if(lowMotion()) return;
 
   /* ripple born where you tap */
-  const RIPPLE=".p-card,.tour-start,.t-stop,.t-arrow,.p-back,.trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-today,.m-nav,.m-today,.ag-btn,.icon,#examFilters button,.mailbtn,.mailcopy,.seg button";
+  const RIPPLE=".p-card,.tour-start,.t-stop,.t-arrow,.p-back,.trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-today,.m-nav,.m-today,.ag-btn,.icon,#examFilters button,.mailbtn,.mailcopy,.ics-btn,.seg button";
   document.addEventListener("pointerdown",e=>{
     const tgt=e.target.closest(RIPPLE); if(!tgt||tgt.disabled) return;
     const r=tgt.getBoundingClientRect(), d=Math.max(r.width,r.height)*2.2;

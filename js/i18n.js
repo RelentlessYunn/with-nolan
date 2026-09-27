@@ -70,6 +70,9 @@ es:{
   /* faculty */
   "faculty.email":"Correo", "faculty.office":"Despacho", "faculty.notPublished":"no publicado",
   /* exams */
+  "ics.button":"Añadir a mi calendario", "ics.calName":"Nolan · UC3M", "ics.closes":"Cierra mañana",
+  "ics.note":{one:"Descarga {n} examen o entrega con avisos, en hora de Madrid.",other:"Descarga {n} exámenes y entregas con avisos, en hora de Madrid."},
+  "ics.pending":{one:"{n} fecha sin día confirmado se añadirá cuando se sepa.",other:"{n} fechas sin día confirmado se añadirán cuando se sepan."},
   "exams.filter.all":"Todas", "exams.filter.type_ex":"Exámenes", "exams.filter.type_en":"Entregas y obligatorio",
   "exams.filter.type_cl":"Labs y clases", "exams.filter.type_cf":"Conflictos", "exams.weekShort":"S{n}", "exams.none":"Sin fechas para este filtro.",
   /* tasks and notes */
@@ -203,6 +206,9 @@ en:{
   "calc.cannot":"5 is out of reach now", "calc.need":"You need {need} of the {left} still to come",
   "calc.fail":"Fail: {n} out of 10", "calc.pass":"Pass", "calc.youNeed":"You need {what}.",
   "faculty.email":"Email", "faculty.office":"Office", "faculty.notPublished":"not published",
+  "ics.button":"Add to my calendar", "ics.calName":"Nolan · UC3M", "ics.closes":"Closes tomorrow",
+  "ics.note":{one:"Downloads {n} exam or submission with reminders, in Madrid time.",other:"Downloads {n} exams and submissions with reminders, in Madrid time."},
+  "ics.pending":{one:"{n} date without a confirmed day will be added once it is known.",other:"{n} dates without a confirmed day will be added once they are known."},
   "exams.filter.all":"All", "exams.filter.type_ex":"Exams", "exams.filter.type_en":"Submissions and required",
   "exams.filter.type_cl":"Labs and classes", "exams.filter.type_cf":"Clashes", "exams.weekShort":"W{n}", "exams.none":"No dates for this filter.",
   "tasks.noneSubject":"No subject tasks.", "tasks.noneGeneral":"Nothing pending.",

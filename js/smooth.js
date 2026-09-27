@@ -1,5 +1,5 @@
 /* ==========================================================
-   smooth.js — smooth scrolling (Settings → Smooth scrolling, on by default).
+   smooth.js — smooth scrolling (Settings → Smooth scrolling, off by default).
    A mouse wheel moves the page in steps; here each step sets where the page
    should get to, and the browser glides it there (its own smooth scrolling,
    which runs apart from the page, so it never stutters). The same for
