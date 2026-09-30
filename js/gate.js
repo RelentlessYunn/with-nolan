@@ -127,6 +127,9 @@ const Gate=(function(){
     setTimeout(()=>box.classList.remove("closing-in"),900);
   }
 
+  /* the version, as the footer says it (the one number to bump when publishing) */
+  const ver=$("#gateVer"), foot=$("footer .version"); if(ver&&foot) ver.textContent=foot.textContent;
+
   /* already remembered on this device (or a guest in this visit): the gate is never shown */
   if(!locked()) box.hidden=true;
 

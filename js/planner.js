@@ -206,6 +206,8 @@ function makePlanner(box,{detail="planner-detail",events=EVENTS,personal=[],mine
     render();
   });
   render();
-  return {render};
+  /* add(k): the form for a new event on that day, with its month shown (Nolan's day and week use it) */
+  const add=k=>{ current=indexOf(k); render(); showForm({date:k}); };
+  return {render,add};
 }
 makePlanner($("#planner-grid"));

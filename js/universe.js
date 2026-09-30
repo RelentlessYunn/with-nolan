@@ -854,6 +854,20 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   /* It filters by itself (blending the four nearest texels, read exactly), never trusting the graphics card to
      blend a half-float picture: some phones cannot, and then every texel of the volume showed as a hard square
      (a staircase of black blocks along an edge-on galaxy's dust ring). Four reads: light enough for a phone */
+  /* the edge-on galaxy on a phone: its light and dust as pictures (img/edgeon-light.jpg, img/edgeon-dust.jpg),
+     worked out once with the full volume at a computer's best (twice the steps, the whole resolution) and
+     drawn here as a card that faces the camera. A phone never walks that volume: whatever its graphics
+     card does with half floats, noise or precision, this galaxy cannot come out in stairs or sheets.
+     light: √(c/(1+c)) per channel (c: the light, already dimmed by its own dust) · dust: how much of what is
+     behind it hides (0..1). The stars of the galaxy are still its own 3D points, in front and behind. */
+  const CARD_FS=HEAD+`in vec2 vQ; out vec4 o; uniform sampler2D uLight, uDust; uniform float uA;
+void main(){
+  vec2 uv=vQ*.5+.5;
+  vec3 e=texture(uLight,uv).rgb, s=e*e;
+  vec3 c=s/max(1.-s,vec3(.004));
+  float a=texture(uDust,uv).r;
+  o=vec4(c,clamp(a,0.,.985))*uA;
+}`;
   const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK, uSize;
 void main(){
   vec2 q=gl_FragCoord.xy*uK*uSize-.5, i=floor(q), f=q-i; ivec2 hi=ivec2(uSize)-1, b=ivec2(i);
@@ -1115,6 +1129,7 @@ void main(){
     P.met=compile(MET_VS,MET_FS);
     P.comet=compile(COMET_VS,COMET_FS);
     P.hole=compile(SPRITE_VS,HEAD+HOLE_FS.slice(HEAD.length));
+    P.card=compile(SPRITE_VS,CARD_FS);
     P.bright=compile(FULL_VS,BRIGHT_FS);
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
@@ -1826,7 +1841,26 @@ void main(){
       }
       gl.disable(gl.SCISSOR_TEST);
     };
+    /* a phone: the edge-on galaxy as its card, once its two pictures are in (until then, the volume) */
+    const card=TIER===TIERS.phone&&g===GALAXIES.edgeon&&P.card&&P.card.u&&[image(EDGE_CARD.light),image(EDGE_CARD.dust)];
+    if(card&&card[0]&&card[1]){ drawStars(-1); drawCard(w,fade,card); drawStars(1); return; }
     drawStars(-1); drawVolume(-1); drawVolume(1); drawStars(1);
+  }
+  /* where the card was made: its half size in the world, and the camera's axes then (to turn the card as the
+     galaxy's disk turns on the screen seen from elsewhere) */
+  const EDGE_CARD={light:"img/edgeon-light.jpg",dust:"img/edgeon-dust.jpg",half:17.82,
+    R:[0.984836,-7.4e-05,0.173486,-0.015761,0.995826,0.089898,-0.172769,-0.091269,0.980725]};
+  function drawCard(w,fade,tex){
+    const q=toCam([w.cx,w.cy,w.cz],cam,camR); if(q[2]<1) return;
+    const n=mul3(w.M,[0,0,1]);
+    const ang=R=>{ const x=R[0]*n[0]+R[1]*n[1]+R[2]*n[2], y=R[3]*n[0]+R[4]*n[1]+R[5]*n[2]; return Math.atan2(y,x); };
+    const hs=EDGE_CARD.half*F/q[2];
+    const u=api.sprite(P.card,W/2+q[0]*F/q[2],H/2+q[1]*F/q[2],hs,hs,ang(camR)-ang(EDGE_CARD.R));
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex[0]); gl.uniform1i(u.uLight,0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,tex[1]); gl.uniform1i(u.uDust,1);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1f(u.uA,fade);
+    gl.disable(gl.SCISSOR_TEST); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA); api.draw();
   }
   /* the rectangle of the render target a galaxy can cover (null: nothing on screen) */
   function screenBox(w,d){

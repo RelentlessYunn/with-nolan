@@ -28,10 +28,10 @@ const PX_PER_MIN=1.2;   /* grid scale */
       const pos=nc===1?"left:5px;right:5px;"
         :`left:calc(${col*100/nc}% + ${col?2:5}px);width:calc(${100/nc}% - 7px);`;
       const cls="ev"+(nc>1?" half":"")+(c.clashes?" dash":"")+(c.dates?" hatch":"");
-      /* a class that is not every week says its next day here; all its days are listed under the grid */
+      /* a class that is not every week says its next day here; a tap shows all its days (openPop) */
       const next=c.dates&&c.dates.find(k=>k>=today);
       const days=c.dates?`<i class="on">${esc(next?t("schedule.nextOn",{date:fmtDayMonth(fromISO(next))}):t("schedule.noneLeft"))}</i>`:"";
-      g+=`<div class="${cls}"${c.dates?` title="${esc(c.dates.map(k=>fmtDayMonth(fromISO(k))).join(" · "))}"`:""} style="${pos}top:${(c.start-T0)*PX_PER_MIN}px;height:${(c.end-c.start)*PX_PER_MIN}px;`+
+      g+=`<div class="${cls}" data-i="${rows.indexOf(c)}" role="button" tabindex="0" style="${pos}top:${(c.start-T0)*PX_PER_MIN}px;height:${(c.end-c.start)*PX_PER_MIN}px;`+
          `background-image:linear-gradient(${S.tint},${S.tint});border-color:${S.color};--sc:${S.color};--i:${n++}">`+
          (c.clashes?`<span class="mark" style="color:${S.color}" title="${esc(t("schedule.clashTip"))}">⚠</span>`:"")+
          `<div class="tags" style="color:${S.color}"><span class="tag grp">${esc(t("schedule.group",{g:c.group}))}</span><span class="tag cam">${S.campus}</span></div>`+
@@ -41,15 +41,39 @@ const PX_PER_MIN=1.2;   /* grid scale */
   });
   const body=$("#calbody");
   body.innerHTML=g;
-  /* the classes that are not every week, each with all its days (past ones struck, the next one marked)
-     and, where it changes, the room of each day */
-  const loose=rows.filter(c=>c.dates).sort((a,b)=>a.day-b.day||a.start-b.start);
-  $("#looseDates").innerHTML=loose.length?`<h3>${esc(t("schedule.looseTitle"))}</h3><ul>`+loose.map(c=>{
-    const S=SUBJECTS[c.subject], next=c.dates.find(k=>k>=today);
-    return `<li style="--sc:${S.color}"><span class="sw" style="background:${S.color}"></span>`+
-      `<b>${esc(S.name)}</b><em>${esc(WEEKDAY_MID[c.day+1])} ${hhmm(c.start)}–${hhmm(c.end)} · ${esc(c.kind)}</em>`+
-      `<span class="ld">${c.dates.map(k=>`<span class="${k<today?"gone":k===next?"next":""}">${esc(fmtDayMonth(fromISO(k)))}${c.rooms&&c.rooms[c.dates.indexOf(k)]?` <small>${esc(c.rooms[c.dates.indexOf(k)].replace(/^Aula /,""))}</small>`:""}</span>`).join("")}</span></li>`;
-  }).join("")+`</ul>`:"";
+  /* a tap on a class: a little pop-up beside it says when it is. Every week (and from when to
+     when), or, for one on loose days, each of its days (past ones struck, the next one marked,
+     with the room of each day when it changes) */
+  const pop=document.createElement("div"); pop.className="ev-pop"; pop.hidden=true; pop.setAttribute("role","dialog");
+  let popFor=null;
+  function openPop(el){
+    const c=rows[+el.dataset.i], S=SUBJECTS[c.subject], next=c.dates&&c.dates.find(k=>k>=today);
+    const days=c.dates?`<div class="pd">`+c.dates.map(k=>{ const r=c.rooms&&c.rooms[c.dates.indexOf(k)];
+        return `<span class="${k<today?"gone":k===next?"next":""}">${esc(fmtDayMonth(fromISO(k)))}${r?` <small>${esc(r.replace(/^Aula /,""))}</small>`:""}</span>`; }).join("")+`</div>`
+      :`<p>${esc(t("schedule.everyWeek",{day:WEEKDAY_MID[c.day+1],from:fmtDayMonth(fromISO(c.from)),to:fmtDayMonth(fromISO(c.to))}))}</p>`;
+    pop.style.setProperty("--sc",S.color);
+    pop.innerHTML=`<b>${esc(S.name)}</b><em>${hhmm(c.start)}–${hhmm(c.end)} · ${esc(c.kind)} · ${esc(next?roomOn(c,next):c.room)}</em>`+
+      (c.dates?`<p>${esc(t("schedule.onDays"))}</p>`:"")+days;
+    pop.hidden=false; popFor=el;
+    /* beside the block: to its right, or to its left when there is no room */
+    const box=body.getBoundingClientRect(), r=el.getBoundingClientRect(), w=Math.min(300,box.width-16);
+    pop.style.width=w+"px";
+    let x=r.right-box.left+8; if(x+w>box.width-4) x=r.left-box.left-w-8; if(x<4) x=Math.max(4,r.left-box.left);
+    const y=Math.max(4,Math.min(r.top-box.top,body.scrollHeight-pop.offsetHeight-4));
+    pop.style.left=x+"px"; pop.style.top=y+"px";
+  }
+  const closePop=()=>{ pop.hidden=true; popFor=null; };
+  body.appendChild(pop);
+  body.addEventListener("click",ev=>{
+    if(ev.target.closest(".ev-pop")) return;
+    const el=ev.target.closest(".ev[data-i]");
+    if(!el||el===popFor){ closePop(); return; }
+    openPop(el);
+  });
+  document.addEventListener("click",ev=>{ if(!pop.hidden&&!body.contains(ev.target)) closePop(); });
+  body.addEventListener("keydown",ev=>{ const el=ev.target.closest&&ev.target.closest(".ev[data-i]");
+    if(el&&(ev.key==="Enter"||ev.key===" ")){ ev.preventDefault(); if(el===popFor) closePop(); else openPop(el); } });
+  document.addEventListener("keydown",ev=>{ if(ev.key==="Escape"&&!pop.hidden){ closePop(); ev.stopPropagation(); } },true);
   body.style.setProperty("--grid-h",((hLast*60-T0)*PX_PER_MIN+14)+"px");
 
   /* at midnight the highlighted column moves to the new day */

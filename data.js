@@ -199,7 +199,13 @@ const TASKS={
  est:[]
 };
 
-/* Nolan's own plans, shown in his month calendar (#nolan) next to the exams.
+/* Nolan's weekly routine: every week on that day, in his day, week and month windows (#nolan).
+   day: 0 Monday … 6 Sunday · start/end "HH:MM" · optional place, color, from/to "YYYY-MM-DD". Example:
+   {day:1, start:"19:00", end:"20:30", what:"Gimnasio", place:"Polideportivo", color:"#3FD9A4"}, */
+const ROUTINE=[
+];
+
+/* Nolan's own plans, shown in his day, week and month windows (#nolan) next to UC3M's events.
    One line each: date "YYYY-MM-DD" and what; optional until (last day, for several days),
    time, place, note, color. Example:
    {date:"2026-10-12", what:"Cena con la familia", time:"21:00", place:"Casa", color:"#FFA640"}, */

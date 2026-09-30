@@ -4,7 +4,7 @@
    · The page (index.html): from the network first, so a new version is
      seen as soon as there is signal; without signal, the saved copy.
    · Its files (css, js, data, icons): they carry the version in their
-     address (?v=0.77), so the saved copy is always right: served from
+     address (?v=0.78), so the saved copy is always right: served from
      here at once, which also makes the site open instantly.
    · What to keep is read from index.html itself (every href and src, plus
      the icons in the manifest): nothing to update by hand. Each time a
