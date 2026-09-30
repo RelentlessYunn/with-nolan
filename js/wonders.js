@@ -154,23 +154,41 @@ void main(){
 }`});
 
   /* ---------- the Ring Nebula ---------- */
-  skyWonder("ringneb",{at:{d:[-.72,.27],m:[-.38,.5]},z:120,R:4.6,rot:.5,sight:"ring",vis:.62,shader:COMMON+`
+  skyWonder("ringneb",{at:{d:[-.72,.27],m:[-.38,.5]},z:120,R:4.6,rot:.5,sight:"ring",vis:.62,shader:COMMON+N3+`
+/* A real shell of gas, walked through along the line of sight: a barrel, densest round its waist, seen
+   nearly down its axis. The waist is the bright ring; the two ends are the fainter glow inside it. The axis
+   leans with where the camera looks from (uPar), so as the view turns it shows as the solid it is.
+   Hotter gas near the star shines blue-green (oxygen), the cooler rim red (nitrogen, hydrogen), and
+   small dark knots of dust stud the inner edge of the ring. */
 void main(){
-  /* a shell seen down its axis: the blue-green glow inside lies deeper than the rim, the faint outer halo nearer */
-  vec2 p0=vQ*1.25, p=p0, pi=p0+uPar*.28, ph=p0-uPar*.22;
-  vec2 e=p/vec2(1.,.8); float r=length(e), a=atan(e.y,e.x)+uT*.008;          /* its filaments turn, very slowly */
-  float ri=length(pi/vec2(1.,.8)), rh=length(ph/vec2(1.,.8));
-  float fil=fbm(vec2(a*2.6,r*9.-uT*.01)+uS,4), grain=fbm(pi*7.+uS+vec2(uT*.01,0.),4);
-  float ring=exp(-pow((r-.6)/.14,2.)), inner=smoothstep(.62,.05,ri);
-  vec3 C=vec3(.3,.78,.85)*inner*(.45+.6*grain)*.85
-        +mix(vec3(1.,.5,.22),vec3(.92,.18,.28),smoothstep(.5,.78,r))*ring*(.55+.9*fil)*(1.3+.1*sin(uT*.7))
-        +vec3(.85,.28,.35)*exp(-pow((rh-.95)/.22,2.))*.14*(.4+fil)
-        +vec3(1.)*exp(-dot(p,p)*1500.)*1.6;
+  vec2 p=vQ*1.25;
+  vec3 ax=normalize(vec3(uPar*.9+vec2(.1,-.07),1.)), u1=normalize(cross(vec3(0.,1.,0.),ax)), u2=cross(ax,u1);
+  float rp=length(p/vec2(1.,.82)), ang=atan(p.y,p.x/1.)+uT*.006;
+  float fil=fbm(vec2(ang*2.6,rp*9.-uT*.01)+uS,4);                 /* filaments running outwards */
+  vec3 C=vec3(0.);
+  const int N=12;                                                 /* (light enough for a phone filling its screen with it) */
+  for(int i=0;i<N;i++){
+    float z=mix(-1.,1.,(float(i)+.5)/float(N));
+    vec3 x=vec3(p,z);
+    float h=dot(x,ax); vec2 q=vec2(dot(x,u1),dot(x,u2)*1.2);
+    float R3=length(vec3(q,h*.7));
+    float shell=exp(-pow((R3-.6)/.12,2.)), waist=exp(-h*h*3.);
+    float n=vn3(x*5.+uS+vec3(0.,0.,uT*.01));
+    float kw=exp(-pow((R3-.53)/.06,2.)), knot=kw>.02?smoothstep(.72,.9,vn3(x*16.+uS*3.))*kw:0.;
+    float dens=(shell*(.28+1.15*waist)+exp(-pow((R3-.42)/.2,2.))*.18)*(.45+.8*n)*(.6+.8*fil)*(1.-.75*knot);
+    /* teal inside, then green-yellow, orange and red at the rim (going straight from teal to orange passed through grey) */
+    vec3 col=mix(vec3(.16,.72,.86),vec3(.62,.92,.45),smoothstep(.36,.52,R3));
+    col=mix(col,vec3(1.,.6,.2),smoothstep(.5,.62,R3)); col=mix(col,vec3(.95,.2,.3),smoothstep(.62,.74,R3));
+    C+=col*dens*(2.2/12.);
+  }
+  C+=vec3(.2,.7,.95)*exp(-rp*rp*7.)*.2;                           /* the thin glow filling it */
+  C+=vec3(.85,.28,.35)*exp(-pow((rp-.98)/.2,2.))*.1*(.4+fil);     /* the faint outer halo */
+  C+=vec3(1.)*exp(-dot(p,p)*1500.)*1.6;                           /* the white dwarf left in the middle */
   o=vec4(C*uA*edgeFade(),0.);
 }`});
 
   /* ---------- a star eating its companion ---------- */
-  skyWonder("binary",{at:{d:[.61,.12],m:[.05,-.1]},z:110,R:5.2,blend:"over",sight:"binary",vis:.74,shader:COMMON+`
+  skyWonder("binary",{at:{d:[.61,.12],m:[.05,-.1]},z:110,R:5.2,blend:"over",sight:"binary",vis:.74,shader:COMMON+N3+`
 uniform float uPh;    /* where they are on their orbit */
 void main(){
   vec2 p=vQ*1.3; const float ci=.34;                         /* the orbit, seen tilted */
@@ -192,11 +210,18 @@ void main(){
   for(int i=0;i<18;i++){ float s=float(i)/17.; vec2 q=mix(L1,hot,s)+nrm*sin(s*3.1416)*.07;
     st+=exp(-dot(p-q,p-q)*(4000.-2500.*s))*(1.-.4*s); }
   vec3 sc=mix(vec3(1.,.4,.18),vec3(1.,.8,.6),.5)*st*.5*(.7+.5*fbm(p*20.-uT,2));
-  /* the red giant: darker at its edge, its surface boiling */
+  /* the red giant: a ball, not a disk. Its surface is a few huge boiling cells (a red giant has so few
+     they can be seen) on a turning sphere, darker and redder towards its edge, where we look through
+     cooler gas; a thin hot glow rims it */
   vec3 gc=vec3(0.); float ga=0.;
-  if(rg<1.){ float mu=sqrt(1.-rg*rg), gr=fbm(dA*13.+vec2(uT*.05,0.),4);
-    gc=mix(vec3(.9,.22,.08),vec3(1.,.6,.3),mu)*(.35+.65*mu)*(.7+.55*gr)*1.3; ga=1.; }
-  gc+=vec3(1.,.35,.15)*exp(-max(rg-1.,0.)*4.)*.25*(1.-ga);
+  if(rg<1.){ float mu=sqrt(1.-rg*rg);
+    vec3 nrm=vec3(dA/Rg,mu), sp=vec3(nrm.x*cos(uT*.02)+nrm.z*sin(uT*.02),nrm.y,-nrm.x*sin(uT*.02)+nrm.z*cos(uT*.02));
+    float cell=fbm3(sp*3.2+uS,4), fine=vn3(sp*14.+uT*.05);
+    float gran=smoothstep(.25,.75,cell)*.8+fine*.2;
+    float limb=pow(mu,.55);
+    gc=mix(vec3(.7,.14,.05),mix(vec3(.95,.34,.1),vec3(1.,.72,.4),gran),limb)*(.45+.75*limb)*(.75+.5*gran)*1.25;
+    ga=smoothstep(1.,.965,rg); gc*=ga; }                   /* (a soft edge: a hard one drew a dark outline) */
+  gc+=vec3(1.,.38,.15)*exp(-max(rg-1.,0.)*9.)*.45*(1.-ga)+vec3(1.,.3,.12)*exp(-max(rg-1.,0.)*2.5)*.12*(1.-ga);
   vec3 other=dc+sc; float oa=clamp(disk*.9,0.,1.);
   C=bFront>.5?other+gc*(1.-oa):gc+other*(1.-ga);        /* whichever is in front hides the other */
   a=max(ga,oa*.7);
@@ -217,8 +242,11 @@ vec2 tail(vec2 p,vec2 c,float th0,float dir,float sd){
     float th=th0+dir*s*2.5, R=.12+.8*pow(s,1.15);
     vec2 q=c+R*vec2(cos(th),sin(th)*.78);
     float d=seg(p,prev,q); if(d<best){ best=d; bs=s; } prev=q; }
-  float w=.018+.075*bs;
-  float lum=exp(-pow(best/w,2.))*(1.-.75*bs)*(.55+.9*fbm(p*11.+sd,4));
+  /* a stream of stars, not a smooth band: bright and narrow near its disk, wider, fainter and more broken
+     up further out, grainy all along (clumps and gaps of stars), with a faint wide glow around it */
+  float w=.014+.06*bs;
+  float grain=pow(fbm(p*16.+sd,4),1.6)*1.9, clumps=smoothstep(.3,.75,fbm(p*5.+sd*1.7,3));
+  float lum=exp(-pow(best/w,2.))*(1.-.8*bs)*(.25+grain)*(.45+.8*clumps)+exp(-pow(best/(w*2.8),2.))*(1.-bs)*.12;
   return vec2(lum,bs);
 }
 /* one of the two disks, pulled out of shape */
@@ -236,7 +264,7 @@ void main(){
   /* the old stars: warm light near the hearts, bluer out in the disks and the tails */
   vec3 C=mix(vec3(.62,.7,1.),vec3(1.,.84,.6),smoothstep(.3,1.2,d1+d2))*(d1+d2)*.75;
   C+=vec3(1.,.9,.72)*(exp(-dot(p-c1,p-c1)*700.)+exp(-dot(p-c2,p-c2)*900.)*.8)*1.2;
-  C+=vec3(.66,.76,1.)*(T1.x+T2.x)*.5;
+  C+=mix(vec3(.72,.8,1.),vec3(.95,.9,.82),.35)*(T1.x+T2.x)*.62;
   /* where they meet: dust lanes, and knots of newborn stars (pink gas, blue clusters) */
   vec2 m=(p-vec2(.0,.0))*vec2(1.,1.35); float meet=exp(-dot(m,m)*10.);
   float lane=pow(1.-abs(fbm(p*7.+uS,5)*2.-1.),5.)*meet*smoothstep(.1,.4,d1+d2);

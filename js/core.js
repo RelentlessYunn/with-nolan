@@ -8,9 +8,8 @@
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-/* the back button: Nolan's logo (the N between four stars); its words only for screen readers */
+/* Nolan's logo (the N between four stars), for the buttons that take you home */
 const LOGO_SVG=`<svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg>`;
-const backLink=(href,key)=>`<a class="p-back p-back-logo" href="${href}" aria-label="${esc(t(key))}" title="${esc(t(key))}">${LOGO_SVG}</a>`;
 /* stable id from a title: "Instalar WepSIM y CREATOR" → "instalar-wepsim-y-creator" */
 const slug=s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()
   .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,48);

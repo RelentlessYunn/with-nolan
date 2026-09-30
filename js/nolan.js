@@ -12,12 +12,6 @@
    Its design is in css/nolan.css.
    ========================================================== */
 const Nolan=(function(){
-  const icon=`<svg class="i-crane" viewBox="0 0 48 48" aria-hidden="true">
-    <path d="M12 44V10M16 44V12M12 40l4-4-4-4 4-4-4-4 4-4-4-4 4-4-4-4"/>
-    <path d="M4 12h40M12 10 16 5l2 7M16 5 40 12"/>
-    <rect class="f2" x="4.5" y="12.5" width="5" height="4.5" rx="1"/>
-    <path d="M7 44h14"/>
-    <g class="hook"><path d="M34 12v13"/><rect class="f" x="30" y="25" width="8" height="6.5" rx="1"/></g></svg>`;
   const WINDOWS=[["dia","nolan.day"],["semana","nolan.week"],["mes","nolan.month"]];
   const ALIAS={day:"dia",today:"dia",hoy:"dia",week:"semana",month:"mes"};
   let box=null, cal=null, shown="dia", day=todayISO(), weekStart=null;
@@ -109,7 +103,6 @@ const Nolan=(function(){
   }
   let tick=null, pendingAdd=null;
   return {
-    title:"Nolan", icon,
     /* Home calls it when #nolan (or #nolan/dia, /semana, /mes) opens */
     render(el,subroute){
       if(!box){ box=el; tick=build(); weekStart=mondayOf(todayISO()); }

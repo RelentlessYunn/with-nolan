@@ -1,5 +1,6 @@
 /* ==========================================================
-   validate.js — checks data.js and eval.js before anything is rendered.
+   validate.js — checks data.js and eval.js (SUBJECTS, GRADING, CLASSES, FACULTY,
+   EVENTS, PERSONAL, ROUTINE, TASKS) before anything is rendered.
    · Anything that would break the page (unknown subject, badly written
      date…) is removed, reported at the top and in the console; the rest works.
    · Anything merely odd (an exam on a holiday, two coordinators…) is
@@ -75,6 +76,25 @@ const CHECK={errors:[],warnings:[]};
     if(reason&&reason.why!=="weekend"&&!e.online&&!(reason.why==="exams"&&e.type==="ex")) warn(`${txt}: there is no class that day (${reason.why}).`);
     else if(!reason&&!e.online&&e.type!=="cf"&&!classesOn(e.date).some(c=>c.subject===e.subject))
       warn(`${txt}: no ${S.short} class that day.`);
+  });
+
+  /* Nolan's own lists (data.js): his plans and his weekly routine. A bad line is left out, never the page */
+  const hhmmOk=x=>x===undefined||/^\d{1,2}[:.]\d{2}/.test(x);
+  const colorOk=x=>x===undefined||/^#[0-9a-f]{3,8}$/i.test(x);
+  if(typeof PERSONAL!=="undefined") keep(PERSONAL,"PERSONAL",e=>{
+    if(!isDate(e.date)) return `badly written date "${e.date}"`;
+    if(e.until&&(!isDate(e.until)||e.until<e.date)) return `"until" (${e.until}) badly written or before the date`;
+    if(!e.what) return `missing "what"`;
+    if(!colorOk(e.color)) return `color "${e.color}" is not like "#FFA640"`;
+    return null;
+  });
+  if(typeof ROUTINE!=="undefined") keep(ROUTINE,"ROUTINE",r=>{
+    if(!(Number.isInteger(r.day)&&r.day>=0&&r.day<=6)) return `day ${r.day} is not Monday (0) to Sunday (6)`;
+    if(!r.what) return `missing "what"`;
+    if(!r.start||!hhmmOk(r.start)||!hhmmOk(r.end)) return `start/end not like "18:00"`;
+    if(r.from&&!isDate(r.from)||r.to&&!isDate(r.to)) return `"from"/"to" badly written`;
+    if(!colorOk(r.color)) return `color "${r.color}" is not like "#3FD9A4"`;
+    return null;
   });
 
   /* tasks */

@@ -34,7 +34,7 @@
     let W=0,H=0,DPR=1;
     const TINT=["255,255,255","255,250,242","226,234,255","205,220,255","255,236,214","255,214,184"];
     /* each section's star: its colour, where its galaxy sits seen from home */
-    /* (from the galaxies' own definitions in universe.js: a new section only needs its "star" there) */
+    /* (from the galaxies' own definitions in galaxies.js: a new section only needs its "star" there) */
     const COL={};
     if(typeof Universe!=="undefined"){
       Object.entries(Universe.GALAXIES||{}).forEach(([k,g])=>{ if(g.star) COL[k]=g.star; });
