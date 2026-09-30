@@ -266,7 +266,7 @@ const Universe=(function(){
   let scrollEnd=0;
   window.addEventListener("scroll",()=>{ scrolledAt=performance.now(); clearTimeout(scrollEnd); scrollEnd=setTimeout(()=>kick(),280); },{passive:true,capture:true});
   /* (automated tests: no life, so their fake clocks never have to draw thousands of frames) */
-  const alive=()=>!robot&&fancy()&&!document.hidden&&!hidden()&&!document.body.classList.contains("idle")&&performance.now()-scrolledAt>250;
+  const alive=()=>!robot&&fancy()&&!document.hidden&&!hidden()&&!document.body.classList.contains("idle");
   /* the camera turns slowly around what it looks at, so the galaxies are seen from
      changing angles and their depth shows (home: around a point among them; a section:
      around its galaxy, which stays in the same place on the screen). With a mouse it
@@ -879,6 +879,14 @@ uniform vec4 uBH;         /* the hole seen from the camera (x right, y up, z ahe
 uniform vec4 uBHn;        /* the axis of its disk (same axes), time */
 uniform float uFpx;       /* focal length in px of the picture */
 uniform vec4 uOcc[2];     /* things in front of the hole (the Earth, the Moon): centre and radius in px of the picture, w: on */
+/* the glow is a quarter-size half-float picture: blended here by hand (four exact reads), as in UP_FS, because
+   the phones that cannot blend half floats showed it as a grid of 4×4 squares */
+vec3 bloomAt(vec2 uv){
+  ivec2 sz=textureSize(uBloom,0), hi=sz-1; vec2 q=uv*vec2(sz)-.5, i=floor(q), f=q-i; ivec2 b=ivec2(i);
+  vec3 a=texelFetch(uBloom,clamp(b,ivec2(0),hi),0).rgb, c=texelFetch(uBloom,clamp(b+ivec2(1,0),ivec2(0),hi),0).rgb;
+  vec3 d=texelFetch(uBloom,clamp(b+ivec2(0,1),ivec2(0),hi),0).rgb, e=texelFetch(uBloom,clamp(b+ivec2(1,1),ivec2(0),hi),0).rgb;
+  return mix(mix(a,c,f.x),mix(d,e,f.x),f.y);
+}
 float h(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 float h31(vec3 p){ p=fract(p*.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
 float vn3(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
@@ -1000,12 +1008,12 @@ void main(){
     }
   }
   /* where the bent ray points off the picture there is nothing to show: the unbent sky, faded in at the border */
-  vec3 bgc=texture(uHdr,vUv).rgb*uOutK+texture(uBloom,vUv).rgb*uBloomK*uOutK;
+  vec3 bgc=texture(uHdr,vUv).rgb*uOutK+bloomAt(vUv)*uBloomK*uOutK;
   /* a pixel the half-float picture could not hold (NaN or infinity): the glow around it instead of a black dot */
-  if(any(isnan(bgc))||any(isinf(bgc))) bgc=texture(uBloom,vUv).rgb*(1.+uBloomK)*uOutK;
+  if(any(isnan(bgc))||any(isinf(bgc))) bgc=bloomAt(vUv)*(1.+uBloomK)*uOutK;
   if(uv!=vUv){
     float inside=uv.x<0.?0.:smoothstep(0.,.03,min(min(uv.x,1.-uv.x),min(uv.y,1.-uv.y)));
-    if(inside>0.) bgc=mix(bgc,texture(uHdr,uv).rgb*uOutK+texture(uBloom,uv).rgb*uBloomK*uOutK,inside);
+    if(inside>0.) bgc=mix(bgc,texture(uHdr,uv).rgb*uOutK+bloomAt(uv)*uBloomK*uOutK,inside);
   }
   vec3 c=bgc*bgT*(1.-hole)+add*uOutK;
   c=1.-exp(-c*uExp);
@@ -1173,7 +1181,7 @@ void main(){
     const fade=t=>t*t*(3-2*t);
     let amp=1, tot=0;
     for(const c of [4,8,16]){
-      const lat=new Float32Array(c*c*c); for(let i=0;i<lat.length;i++) lat[i]=r();
+      const lat=new Float32Array(c*c*c); for(let i=0;i<lat.length;i++) lat[i]=Math.round(r()*255)/255;   /* (as the 8-bit grid will hold it, so the range measured below is exact) */
       lats.push({c,lat});
       const L=(x,y,z)=>lat[((z%c)*c+(y%c))*c+(x%c)];
       for(let z=0;z<S;z++){ const fz=z*c/S, z0=Math.floor(fz), wz=fade(fz-z0);
@@ -1188,9 +1196,15 @@ void main(){
     }
     /* stretch the values over the whole range, so clouds have clear edges */
     let lo=1e9, hi=-1e9; for(const v of acc){ if(v<lo) lo=v; if(v>hi) hi=v; }
+    /* 8 bits a value (the values run 0..1): every graphics card blends these itself. Half-float grids
+       (R16F) were only blended by some: phones that cannot (the same ones as UP_FS) read each cell as a
+       flat block, and the edge-on galaxy's dust came out in stairs of hard squares */
     const tex=lats.map(({c,lat})=>{
       const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_3D,t);
-      gl.texImage3D(gl.TEXTURE_3D,0,gl.R16F,c,c,c,0,gl.RED,gl.FLOAT,lat);
+      const u8=new Uint8Array(lat.length); for(let i=0;i<lat.length;i++) u8[i]=Math.round(Math.min(1,Math.max(0,lat[i]))*255);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+      gl.texImage3D(gl.TEXTURE_3D,0,gl.R8,c,c,c,0,gl.RED,gl.UNSIGNED_BYTE,u8);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT,4);
       gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
       [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T,gl.TEXTURE_WRAP_R].forEach(k=>gl.texParameteri(gl.TEXTURE_3D,k,gl.REPEAT));
       return t;
@@ -1901,12 +1915,12 @@ void main(){
     skyEvents();
     const busy=flying||appearing()||meteors.length>0||comets.length>0;
     if(!busy&&!live&&!dirty) return false;
-    /* while the page scrolls the sky holds still (flights aside): every frame goes to the scrolling */
-    if(!flying&&!dirty&&now-scrolledAt<250) return true;
     /* life alone: about 60 a second on a computer (every frame of a 60 Hz screen, every other
        one of a 120 or 144 Hz screen: the drift is far too slow to need more), about 30 on a
-       phone (10 under automated tests) */
-    const every=robot?(anim?60:100):anim?0:phone?31:13;
+       phone (10 under automated tests). While the page scrolls the sky keeps moving, a little
+       less often (about 30 and 22 a second), so the scrolling gets most of each frame */
+    const scrolling=now-scrolledAt<250;
+    const every=robot?(anim?60:100):anim?0:scrolling?(phone?45:31):phone?31:13;
     /* every frame for flights and galaxies fading in; shooting stars and comets are smooth at the pace of life */
     if(flying||appearing()||dirty||now-lastDraw>=every){
       dirty=false;
@@ -1919,6 +1933,8 @@ void main(){
   /* if this device cannot keep up, draw fewer pixels (and more again if there is room) */
   function adapt(now){
     if(!alive()&&!anim){ gaps.length=0; return; }
+    /* while the page scrolls the sky is drawn less often on purpose: that is no sign of a slow device */
+    if(!anim&&now-scrolledAt<250){ gaps.length=0; gaps.last=0; return; }
     if(gaps.last) gaps.push(now-gaps.last);
     gaps.last=now;
     if(gaps.length<24||now-lastAdapt<1500) return;
@@ -2042,7 +2058,10 @@ void main(){
     let first=false; try{ first=!sessionStorage.getItem("nolan-launched")||!!sessionStorage.getItem("nolan-fly"); sessionStorage.setItem("nolan-launched","1"); sessionStorage.removeItem("nolan-fly"); }catch(e){}
     /* (and when a guest has just come in: gate.js reloads the page with the demo, "nolan-fly") */
     if(first&&scene==="home"&&!robot&&fullMotion()&&!root.hasAttribute("data-locked")&&!covering()){
-      scene="gate"; base={...camFor("gate")}; go("home",{duration:4200});
+      scene="gate"; base={...camFor("gate")};
+      /* (html.launching: while it flies, the "skip" button is offered, home.js) */
+      const landed=()=>root.classList.remove("launching");
+      root.classList.add("launching"); go("home",{duration:4200,onArrive:landed,onCancel:landed});
     }
   }
   /* no 3D after all: the plain background shows instead */
@@ -2085,9 +2104,17 @@ void main(){
   /* seek(seconds): jump life forward (tests and debugging) */
   /* skip(): what waits for the flight under way shows now; the flight itself goes on (true if it did something) */
   const skip=()=>ok?!!anim&&anim.early():!!(window.Stars&&Stars.skip());
+  /* land(): the flight under way ends now, the camera already where it was going (the "skip" button) */
+  function land(){
+    if(!ok) return skip();
+    if(!anim) return false;
+    const a=anim; a.early(); if(anim===a) anim=null;
+    base={...camFor(scene)}; prevCam=null; starsFade=1; need();
+    return true;
+  }
   /* ready(): everything is built and on the screen (or there is no universe to wait for) */
   const ready=()=>!gl||lost||dead||root.hasAttribute("data-locked")||settled>=1;
-  return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>ok?!!anim:!!(window.Stars&&Stars.busy()), camera:()=>({...base}),
+  return {go, skip, land, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>ok?!!anim:!!(window.Stars&&Stars.busy()), camera:()=>({...base}),
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
     /* hole(): whether the black hole is on the screen now (tests) */
     hole:()=>{ if(!ok) return false; const b=blackHole(); return !!b&&b.a>0; },   /* (traced; from afar it is drawn among the galaxies instead) */

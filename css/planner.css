@@ -120,3 +120,48 @@
   .m-chip.closing::before{left:-3px;right:13px;width:auto}
   .m-link{width:calc(100% + 6px);margin:0 -3px;padding:3px 0;border:0;font-size:10px;line-height:10px}
 }
+
+/* ---------- your own events: the "+" button, the form, and change / delete ---------- */
+.m-add{
+  display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+  font:inherit;font-size:.78rem;font-weight:700;padding:6px 13px 6px 10px;border-radius:8px;cursor:pointer;
+  color:#1A1206;background:linear-gradient(135deg,#FFC37A,#FFA640);border:0;
+  box-shadow:0 6px 16px -8px rgba(255,166,64,.8);transition:transform .14s var(--spring),filter .16s ease;
+}
+.m-add b{font-size:1.05rem;line-height:1;font-weight:800}
+@media (hover:hover){.m-add:hover{filter:brightness(1.08);transform:translateY(-1px)}}
+.m-add:active{transform:scale(.94)}
+.m-day[data-day]{cursor:cell}
+.m-chip.own i{box-shadow:0 0 0 2px color-mix(in srgb,var(--sc) 35%,transparent)}
+.ev-note{margin-top:10px!important}
+.ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ev-btn{
+  font:inherit;font-size:.82rem;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;
+  border:1px solid var(--rule);background:var(--card-2);color:var(--ink);transition:transform .14s var(--spring),background .16s ease;
+}
+.ev-btn.main{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.ev-btn.danger{color:#FF8A7E;border-color:rgba(255,107,94,.4)}
+.ev-btn.danger[data-sure]{background:#FF6B5E;color:#1A0604;border-color:#FF6B5E}
+.ev-btn:active{transform:scale(.95)}
+.ev-form{display:flex;flex-direction:column;gap:10px}
+.ev-form .ev-head{margin-bottom:2px}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f-field span{font-size:.72rem;font-weight:700;letter-spacing:.03em;color:var(--ink-3)}
+.f-field input{
+  font:inherit;font-size:.92rem;color:var(--ink);background:rgba(255,255,255,.05);min-width:0;width:100%;
+  border:1px solid var(--rule);border-radius:9px;padding:9px 11px;color-scheme:dark;
+}
+.f-field input:focus{outline:none;border-color:var(--ink-2);background:rgba(255,255,255,.08)}
+.f-colors{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.f-color{position:relative;cursor:pointer}
+.f-color input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.f-color i{display:block;width:24px;height:24px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);transition:transform .15s var(--spring)}
+.f-color input:checked+i{box-shadow:0 0 0 2px var(--card-solid),0 0 0 4px var(--c);transform:scale(1.08)}
+.f-color input:focus-visible+i{outline:2px solid var(--ink);outline-offset:4px}
+.f-error{margin:0!important;color:#FF8A7E!important;font-size:.84rem!important;font-weight:600}
+@media (max-width:620px){
+  .m-add span{display:none}
+  .m-add{padding:6px 10px}
+  .f-row{grid-template-columns:1fr}
+}

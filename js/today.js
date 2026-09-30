@@ -43,7 +43,7 @@
           `<span class="sw" style="background:${S.color}"></span>`+
           `<time>${hhmm(c.start)}–${hhmm(c.end)}</time>`+
           `<span class="m"><b>${esc(S.name)}</b><em>${esc(c.kind)} · ${campusOf(c.subject)}</em></span>`+
-          `<span class="room">${esc(c.room)}</span></button>`;
+          `<span class="room">${esc(roomOn(c,shown))}</span></button>`;
       }).join("");
       const campus=[...new Set(classes.map(c=>campusOf(c.subject)))].join(" "+t("and")+" ");
       $("#dayMeta").textContent=tn("today.classes",classes.length)+" · "+campus+(week?" · "+t("today.week",{n:week.n}):"");

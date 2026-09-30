@@ -40,6 +40,22 @@
 .ev b{display:block;font-size:.78rem;font-weight:700;line-height:1.18;color:var(--ink)}
 .ev u{display:block;text-decoration:none;font-size:.7rem;color:var(--ink-2);margin-top:3px;font-variant-numeric:tabular-nums}
 .ev s{display:block;text-decoration:none;font-size:.74rem;font-weight:700;color:var(--ink);margin-top:3px}
+/* a class that is not every week: its next day, in its colour (all its days are in the list below) */
+.ev .on{display:block;font-style:normal;font-size:.66rem;font-weight:800;color:var(--sc);margin-top:3px;position:relative;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.half .on{font-size:.6rem}
+/* under the grid: every day of the classes that are not every week */
+.loose:empty{display:none}
+.loose{border-top:1px solid var(--rule);padding:14px 16px 16px;background:var(--card-2)}
+.loose h3{margin:0 0 10px;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.loose ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.loose li{display:grid;grid-template-columns:auto minmax(150px,220px) minmax(150px,230px) 1fr;align-items:baseline;gap:4px 12px;font-size:.84rem}
+.loose li .sw{align-self:center}
+.loose li em{font-style:normal;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.loose .ld{display:flex;flex-wrap:wrap;gap:6px}
+.loose .ld span{padding:2px 9px;border-radius:99px;border:1px solid var(--rule);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.loose .ld small{color:var(--ink-3);font-weight:500;font-size:.72rem}
+.loose .ld .gone{opacity:.4;text-decoration:line-through}
+.loose .ld .next{border-color:var(--sc);color:var(--sc);background:color-mix(in srgb,var(--sc) 12%,transparent)}
 .ev.dash{border-style:dashed;border-left-style:dashed}
 .ev.hatch::before{content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(45deg,transparent 0 5px,rgba(0,0,0,.07) 5px 10px)}

@@ -184,13 +184,28 @@ const Home=(function(){
 
   /* ---------- the opening: the logo draws itself, NOLAN appears, then the rest ----------
      Played when the app starts (or right after the PIN), not every time home opens. */
+  const root=document.documentElement;
+  let introTimer=0, skipped=false;
   function intro(){
+    if(skipped){ skipped=false; return; }               /* the whole opening was skipped: not this part either */
     if(P.hidden||!fullMotion()) return;
     /* back from changing a setting: the page must be ready and still when the passage opens */
-    if(document.documentElement.classList.contains("shift-arriving")) return;
-    P.classList.remove("intro"); void P.offsetWidth; P.classList.add("intro");
-    setTimeout(()=>P.classList.remove("intro"),4200);
+    if(root.classList.contains("shift-arriving")) return;
+    P.classList.remove("intro"); void P.offsetWidth; P.classList.add("intro"); root.classList.add("intro-on");
+    clearTimeout(introTimer);
+    introTimer=setTimeout(()=>{ P.classList.remove("intro"); root.classList.remove("intro-on"); },4200);
   }
+  /* "Skip": while the opening plays (the flight in, after the PIN or on the first visit, and the logo
+     drawing itself), a button ends it all at once: the camera lands, everything shows (css: cinema.css) */
+  const skipBtn=$("#skipIntro");
+  if(skipBtn) skipBtn.addEventListener("click",()=>{
+    const flying=root.classList.contains("flying")||root.classList.contains("launching");
+    skipped=flying&&!P.classList.contains("intro");     /* the logo would start on landing: not now */
+    Universe.land();
+    clearTimeout(introTimer); P.classList.remove("intro");
+    root.classList.remove("intro-on","launching","flying");
+    skipBtn.blur();
+  });
   Gate.onUnlock(intro);
   Gate.onUnlock(draw);                                 /* the greeting: for Nolan, or for a guest */
 

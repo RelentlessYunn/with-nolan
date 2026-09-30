@@ -102,6 +102,8 @@ function classesOn(k){
       && !(h&&h.campus&&SUBJECTS[c.subject].campus.toLowerCase()===h.campus))
     .sort((x,y)=>x.start-y.start);
 }
+/* where a class is on a given day: one-off classes may change room from one date to the next */
+const roomOn=(c,k)=>c.rooms&&c.dates&&c.rooms[c.dates.indexOf(k)]||c.room;
 /* state of a class at a given minute; the end minute is no longer "now" */
 const classState=(c,m)=>m<c.start?"upcoming":m<c.end?"now":"over";
 

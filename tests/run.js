@@ -4,7 +4,7 @@
    Needs Playwright with Chromium (npm i playwright). It never touches the
    real cloud or the real weather: JSONBin and Open-Meteo calls are simulated
    or blocked (config.js may hold real keys).
-   137 checks (without NOLAN_PIN: 133, and 3 skipped), by section:
+   138 checks (without NOLAN_PIN: 134, and 3 skipped), by section:
    · Loading: no errors, nothing wider than a phone.
    · PIN and start: the entry screen (logo and guest button; the logo or a
      typed digit opens the keypad; nothing read from the cloud behind it),
@@ -395,6 +395,14 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const r=await p.evaluate(()=>({opens:document.querySelectorAll("#planner-grid .m-chip.opens").length,
       closes:document.querySelectorAll("#planner-grid .m-chip.closing").length,links:document.querySelectorAll("#planner-grid .m-link").length}));
     ok(r.opens===1&&r.closes===1&&r.links===4,`a window of several days (26–31 Oct) is joined by a line (${r.links} days in between)`);
+    /* your own event: + opens the form, it is saved and shown (and kept), then deleted with two taps */
+    await p.click("#planner-grid .m-add"); await p.fill("#planner-detail [name=what]","Cena de prueba");
+    await p.fill("#planner-detail [name=date]","2026-10-22"); await p.click("#planner-detail .ev-btn.main");
+    const added=await p.evaluate(()=>({chip:[...document.querySelectorAll("#planner-grid .m-chip.own")].map(c=>c.closest(".m-day").dataset.day),
+      kept:Object.values(JSON.parse(localStorage.getItem("nolan-my-events")||"{}")).length,cloud:Cloud.enabled}));
+    await p.click("#planner-grid .m-chip.own"); await p.click("#planner-detail [data-del]"); await p.click("#planner-detail [data-del]");
+    const gone=await p.evaluate(()=>document.querySelectorAll("#planner-grid .m-chip.own").length+MyEvents.list().length);
+    ok(added.chip.join()==="2026-10-22"&&(added.cloud||added.kept===1)&&gone===0&&!p.errors.length,`+ adds your own event on its day, and it can be deleted (${JSON.stringify(added)}, left ${gone})`);
     await p.context().close();
   }
 
@@ -450,8 +458,9 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(v.on&&v.exit&&v.page==="0"&&v.header==="none"&&back,`the eye button shows just the sky, and Escape brings everything back (${JSON.stringify(v)})`);
     await p.goto(PAGE+"#nolan"); await p.waitForTimeout(600);
     const n=await p.evaluate(()=>({shown:!document.getElementById("nolanView").hidden,month:!!document.querySelector("#nolan-grid .m-grid.days"),
-      other:document.querySelectorAll("#nolan-grid .m-chip:not(.ex):not(.personal)").length}));
-    ok(n.shown&&n.month&&n.other===0,`#nolan opens Nolan's month calendar, with only exams and his own plans (${JSON.stringify(n)})`);
+      add:!!document.querySelector("#nolan-grid .m-add"),
+      same:document.querySelectorAll("#nolan-grid .m-chip:not(.personal)").length===document.querySelectorAll("#planner-grid .m-chip:not(.personal)").length}));
+    ok(n.shown&&n.month&&n.add&&n.same,`#nolan opens Nolan's month calendar, with every UC3M event and a + to add (${JSON.stringify(n)})`);
     await p.context().close();
   }
 

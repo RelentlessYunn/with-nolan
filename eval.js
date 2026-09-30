@@ -16,7 +16,7 @@ ed:{
   "<strong>Final</strong> — en papel, todo el temario, con peso especial en árboles, grafos y complejidad en notación Big O.",
   "<strong>Extraordinaria</strong> — lo más favorable entre el 100 % del examen y 50/50 con los parciales, esta última solo con un 4 o más.",
   "<strong>Material</strong> — Goodrich, Tamassia y Goldwasser, <em>Data Structures and Algorithms in Python</em>. OCW de la asignatura, curso 311. Todo en Python; lleva portátil a clase."],
- syllabus:[["1","Jue 10 sep y vie 11 sep · Presentación. Bloque 1, ítem 1: modelado orientado a objetos"],["2","Jue 17 sep · Ítem 2: diseño de algoritmos. Vie 18 sep · Ítem 3: análisis de algoritmos"],["3","Jue 24 y vie 25 sep · Ítem 4: algoritmos de búsqueda y ordenación"],["4","Jue 1 y vie 2 oct · Ítem 5: algoritmos recursivos"],["5","<b>Lun 5 oct (extra, 4.0.E06)</b> · Bloque 2, ítem 6: pilas. Jue 8 oct · colas"],["6","<b>Jue 15 oct · Primer examen parcial (bloque 1, ítems 1–5)</b>. Vie 16 oct · listas enlazadas"],["7","<b>Lun 19 oct (extra, 2.3.C04)</b> · listas enlazadas. Jue 22 oct · diccionarios y tablas. Vie 23 oct · resolución del examen y co-evaluación"],["8","Jue 29 oct · Bloque 3, ítem 7: árboles binarios. Vie 30 oct · árboles binarios de búsqueda"],["9","Jue 5 y vie 6 nov · Árboles binarios de búsqueda"],["10","Jue 12 nov · Árboles binarios de búsqueda. <b>Vie 13 nov · Segundo examen parcial (bloque 2, ítem 6)</b>"],["11","<b>Lun 16 nov (extra, 2.3.D05)</b> · Árboles AVL. Jue 19 nov · árboles B. Vie 20 nov · resolución del examen y co-evaluación"],["12","Jue 26 y vie 27 nov · Grafos: implementaciones"],["13","<b>Lun 30 nov (extra, 2.3.C04)</b> y jue 3 dic · Grafos: recorridos. Vie 4 dic · camino mínimo"],["14","Jue 10 dic · Camino mínimo. Vie 11 dic · resolución de exámenes de cursos anteriores"]]},
+ syllabus:[["1","Jue 10 sep y vie 11 sep · Presentación. Bloque 1, ítem 1: modelado orientado a objetos"],["2","Jue 17 sep · Ítem 2: diseño de algoritmos. Vie 18 sep · Ítem 3: análisis de algoritmos"],["3","Jue 24 y vie 25 sep · Ítem 4: algoritmos de búsqueda y ordenación"],["4","Jue 1 y vie 2 oct · Ítem 5: algoritmos recursivos"],["5","<b>Lun 5 oct (extra, 4.0.E06, 12:30–14:00)</b> · Simulacro de examen y autoevaluación, con José Daniel García Sánchez. Jue 8 oct · colas"],["6","<b>Jue 15 oct · Primer examen parcial (bloque 1, ítems 1–5)</b>. Vie 16 oct · listas enlazadas"],["7","<b>Lun 19 oct (extra, 2.3.C04)</b> · listas enlazadas. Jue 22 oct · diccionarios y tablas. Vie 23 oct · resolución del examen y co-evaluación"],["8","Jue 29 oct · Bloque 3, ítem 7: árboles binarios. Vie 30 oct · árboles binarios de búsqueda"],["9","Jue 5 y vie 6 nov · Árboles binarios de búsqueda"],["10","<b>Jue 12 nov · Segundo examen parcial (bloque 2, ítem 6), 9:00–10:30, aula 2.3.C01</b>. Vie 13 nov · árboles binarios de búsqueda"],["11","<b>Lun 16 nov (extra, 2.3.D05)</b> · Árboles AVL. Jue 19 nov · árboles B. Vie 20 nov · resolución del examen y co-evaluación"],["12","Jue 26 y vie 27 nov · Grafos: implementaciones"],["13","<b>Lun 30 nov (extra, 2.3.C04)</b> y jue 3 dic · Grafos: recorridos. Vie 4 dic · camino mínimo"],["14","Jue 10 dic · Camino mínimo. Vie 11 dic · resolución de exámenes de cursos anteriores"]]},
 talf:{
  grading:{scale:"10", min:{item:1, value:4, text:"un 4 sobre 10 en el examen final"}},
  parts:[["Evaluación continua",50],["Examen final",50]],
@@ -31,14 +31,15 @@ talf:{
  syllabus:[["1","Tema 1: introducción. Tema 2: teoría de autómatas"],["2","Tema 3: autómatas finitos. Ejercicios, hojas 1 y 2"],["3","Tema 3. Ejercicios hojas 2 y 3. Sesión extra el jueves 24"],["4","Tema 4: lenguajes y gramáticas. JFLAP 1"],["5","Tema 4. Ejercicios de diseño, hoja 3"],["6","Tema 4. Ejercicios de lenguajes y gramáticas, hoja 1"],["7","Tema 4. Ejercicios de FNG y FNC, hoja 2"],["8","Tema 5: lenguajes regulares. Ejercicios hoja 2"],["9","Tema 5. JFLAP 2 el jueves, EC1 el viernes"],["10","Ejercicios de FNG. Tema 6: autómatas a pila"],["11","Tema 6.2 e inicio del tema 7. Ejercicios de autómatas a pila"],["12","Tema 7: máquina de Turing. JFLAP 3"],["13","Tema 7. Ejercicios de máquina de Turing"],["14","Repaso. JFLAP 4 el jueves, EC2 el viernes"]]},
 is:{
  grading:{scale:"10", min:{item:3, value:5, text:"un 5 sobre 10 en el examen final"}},
- parts:[["Parcial I",15],["Parcial II",15],["Trabajo",20],["Examen final",50]],
+ parts:[["Parcial I",15],["Parcial II",15],["Ejercicios en clase",20],["Examen final",50]],
  minimum:"<b>Un 5 sobre 10 en el examen final.</b> Es el mínimo más exigente de las siete: aquí la continua no te salva un examen flojo.",
  rules:[
-  "<strong>Semana 5</strong> — parcial I de teoría.",
-  "<strong>Semana 13</strong> — parcial II de teoría.",
-  "<strong>Semana 14</strong> — entrega del trabajo individual, parte práctica.",
-  "<strong>Final</strong> — preguntas teóricas y ejercicios de aplicación de todo el curso.",
-  "Las cuatro prácticas de los viernes de 12:30 a 14:00 son donde se trabaja ese proyecto. Aprovéchalas: es lo único que puedes sacar de la semana 14."],
+  "<strong>Jueves 8 de octubre (semana 5)</strong> — parcial I (SE1) de teoría, 15 %: bloque I, ingeniería de requisitos. Fecha fija.",
+  "<strong>Jueves 3 de diciembre (semana 13)</strong> — parcial II (SE1) de teoría, 15 %: bloques II y III, modelado conceptual y arquitectónico. Fecha fija.",
+  "<strong>Ejercicios individuales en clase (SE4)</strong> — 20 %, hasta 10 a lo largo del curso (pueden ser menos), repartidos a partes iguales. Media hora al final de una sesión, a mano, en papel, sin compañeros ni IA. Nunca en semana de examen. La nota se cierra en la semana 14.",
+  "<strong>Final (SE2)</strong> — 50 %, miércoles 20 de enero de 10:00 a 14:00: preguntas teóricas y ejercicios de aplicación de todo el curso.",
+  "<strong>Novedad del curso</strong> — el esquema de evaluación cambia respecto a años anteriores: ya no hay trabajo individual.",
+  "<strong>Contacto</strong> — coordinación: Eduardo Cibrián (ecibrian@inf.uc3m.es), para dudas entre grupos o del cronograma común."],
  syllabus:[["Bloque I","Ingeniería de requisitos. 1. Introducción. 2. Obtención, descripción y gestión. 3. Propiedades, atributos y organización. 4. Tipos de requisitos"],["Bloque II","Modelado conceptual con UML. 5. Introducción. 6. Clases y objetos. 7. Asociaciones. 8. Jerarquías"],["Bloque III","Modelado arquitectónico con UML. 9. Introducción. 10. Componentes. 11. Interfaces. 12. Diseño por contratos"]]},
 ec:{
  grading:{scale:"10", min:{item:2, value:5, text:"un 5 sobre 10 en el examen final"}, min2:{item:1, value:4, text:"un 4 de media en prácticas"}},
@@ -69,8 +70,8 @@ dcp:{
  minimum:"Hay que <b>aprobar la teoría por separado: mínimo 3 sobre 6 en el test</b>. La nota se cuenta sobre 10 puntos, no en porcentajes.",
  rules:[
   "<strong>Participación</strong> — intervenciones, exposiciones y trabajos encomendados durante las catorce semanas. Hasta 1 punto.",
-  "<strong>Cuestionario</strong> — semana 8, tipo test sobre lo cubierto hasta entonces. Hasta 1 punto.",
-  "<strong>Caso de recapitulación</strong> — 9 de diciembre, con los textos legales delante. Hasta 2 puntos.",
+  "<strong>Cuestionario</strong> — miércoles 4 de noviembre (fecha definitiva), tipo test sobre lo cubierto hasta entonces. Hasta 1 punto.",
+  "<strong>Caso de recapitulación</strong> — miércoles 9 de diciembre (fecha definitiva), con los textos legales delante. Hasta 2 puntos.",
   "<strong>Examen teórico</strong> — tipo test, de 0 a 6 puntos.",
   "<strong>Extraordinaria</strong> — test de 0 a 6 más caso de 0 a 4. Si has aprobado la continua puedes no hacer el caso y se suma tu nota de continua.",
   "Las magistrales acaban el 30 de noviembre; las prácticas siguen hasta el 9 de diciembre. Dos talleres de redacción de contratos, semanas 3 y 10."],

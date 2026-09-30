@@ -16,13 +16,13 @@ const SUBJECTS={
 };
 
 /* Timetable. day: 0 Monday … 4 Friday · start/end: minutes from midnight (540 = 9:00)
-   Weekly classes have from/to; one-off classes have dates.
+   Weekly classes have from/to; one-off classes have dates (and, if the room changes, rooms: one per date).
    Layout (half width), clashes and hatching are computed automatically. */
 const CLASSES=[
  {subject:"est", day:0, start:540, end:630, kind:"prácticas", room:"Aula 5.1.04", when:"7 sep – 30 nov", group:"801", from:"2026-09-07", to:"2026-11-30"},
  {subject:"dcp", day:0, start:645, end:735, kind:"magistral", room:"Aula 10.2.1", when:"7 sep – 30 nov", group:"76 y 801", from:"2026-09-07", to:"2026-11-30"},
  {subject:"eco", day:0, start:750, end:840, kind:"magistral", room:"Aula 10.2.1", when:"7 sep – 7 dic", group:"27, 76 y 801", from:"2026-09-07", to:"2026-12-07"},
- {subject:"ed", day:0, start:750, end:840, kind:"prácticas", room:"Aulas varias", when:"5 y 19 oct · 16 y 30 nov", group:"1081", dates:["2026-10-05","2026-10-19","2026-11-16","2026-11-30"]},
+ {subject:"ed", day:0, start:750, end:840, kind:"clase extra", room:"Aulas varias", when:"5 y 19 oct · 16 y 30 nov", group:"1081", dates:["2026-10-05","2026-10-19","2026-11-16","2026-11-30"], rooms:["Aula 4.0.E06","Aula 2.3.C04","Aula 2.3.D05","Aula 2.3.C04"]},
  {subject:"talf", day:1, start:540, end:630, kind:"teoría", room:"Aula 2.3.B05", when:"8 sep – 1 dic", group:"82", from:"2026-09-08", to:"2026-12-01"},
  {subject:"is", day:1, start:645, end:735, kind:"teoría", room:"Aula 4.0.E04", when:"8 sep – 1 dic", group:"82", from:"2026-09-08", to:"2026-12-01"},
  {subject:"est", day:2, start:540, end:630, kind:"magistral", room:"Aula 10.2.1", when:"9 sep – 9 dic", group:"78 y 801", from:"2026-09-09", to:"2026-12-09"},
@@ -44,10 +44,12 @@ const CLASSES=[
    · "lecture+lab" · "assistant" · "" · coord: true for the coordinator (one per subject) */
 const FACULTY=[
  {subject:"ed", name:"Isabel Segura Bedmar", role:"theory", coord:false, email:"isegura@inf.uc3m.es", office:"2.2.B05 · Sabatini, Leganés", note:""},
+ {subject:"ed", name:"José Daniel García Sánchez", role:"", coord:false, email:"", office:"", note:"Imparte la clase extra del lunes 5 de octubre (simulacro de examen), aula 4.0.E06."},
  {subject:"ed", name:"Israel González Carrasco", role:"", coord:true, email:"igcarras@inf.uc3m.es", office:"2.2.B13 · Sabatini, Leganés", note:"Tutorías por cita previa por correo. En el asunto: nombre completo, curso, asignatura y número de grupo (81)."},
  {subject:"talf", name:"Araceli Sanchis de Miguel", role:"theory", coord:true, email:"masm@inf.uc3m.es", office:"2.1.B11 · Sabatini, Leganés", note:"Pregúntale por las fechas de JFLAP 3 y de la EC2, que siguen sin cuadrar."},
  {subject:"is", name:"José María Álvarez Rodríguez", role:"theory", coord:false, email:"joalvare@inf.uc3m.es", office:"2.1.B07 · Sabatini, Leganés", note:""},
- {subject:"is", name:"Eduardo Cibrián Sánchez", role:"", coord:true, email:"ecibrian@inf.uc3m.es", office:"", note:""},
+ {subject:"is", name:"Jesús Poza", role:"theory", coord:false, email:"jepozac@inf.uc3m.es", office:"2.1.B18 · Sabatini, Leganés", note:"Aparece como profesor en las diapositivas de la semana 1. Tutorías: pendientes."},
+ {subject:"is", name:"Eduardo Cibrián Sánchez", role:"", coord:true, email:"ecibrian@inf.uc3m.es", office:"2.1.B18 · Sabatini, Leganés", note:"Coordinación: dudas entre grupos e incidencias con el cronograma común."},
  {subject:"ec", name:"Alejandro Calderón Mateos", role:"theory", coord:false, email:"acaldero@inf.uc3m.es", office:"2.2.B17 · Sabatini, Leganés", note:"Autor de WepSIM, el simulador que vais a usar."},
  {subject:"ec", name:"Félix García Carballeira", role:"", coord:true, email:"fgcarbal@inf.uc3m.es", office:"2.2.B19 · Sabatini, Leganés", note:""},
  {subject:"eco", name:"Javier Sánchez Bachiller", role:"lecture", coord:false, email:"javiersb@eco.uc3m.es", office:"", note:""},
@@ -68,23 +70,23 @@ const EVENTS=[
  {subject:"ec", date:"2026-09-24", what:"Laboratorio 1", weight:"laboratorio", type:"cl", time:"14:00–15:30", room:"INF 7.0.J04 y 7.0.J05"},
  {subject:"talf", date:"2026-10-02", what:"JFLAP 1 · autómatas finitos, temas 2 y 3", weight:"obligatorio", type:"en", time:"10:45–12:15", room:"INF 7.0.J04", format:"Práctica en parejas, con entrega"},
  {subject:"is", date:"2026-10-02", what:"Práctica en aula", weight:"clase", type:"cl", time:"12:30–14:00", room:"Aula 4.1.E06"},
- {subject:"ed", date:"2026-10-05", what:"Sesión extra del 1081, 12:30, aula 4.0.E06 — choca con Economía", weight:"conflicto", type:"cf"},
- {subject:"eco", date:"2026-10-07", what:"Evaluación en clase 1. La haces con otro grupo, no en tu sesión habitual", weight:"12 % final", type:"ex", time:"09:00–10:30", room:"Aula 6.1.02", format:"Escrito en clase, folios en blanco y bolígrafo, sin calculadora"},
- {subject:"is", date:"2026-10-06", what:"Examen parcial I, en la clase de teoría", weight:"15 %", type:"ex", time:"10:45–12:15", room:"Aula 4.0.E04 · teoría del martes", format:"Presencial, en horario de teoría"},
- {subject:"ed", date:"2026-10-15", what:"Primer parcial: bloque 1, ítems 1 a 5. Presencial y escrito, aula 2.3.C01", weight:"25 %", type:"ex", time:"09:00–10:30", room:"Aula 2.3.C01", format:"Presencial y escrito"},
+ {subject:"ed", date:"2026-10-05", what:"Clase extra del 1081: simulacro de examen y autoevaluación antes del primer parcial, con José Daniel García Sánchez — choca con Economía", weight:"conflicto", type:"cf", time:"12:30–14:00", room:"Aula 4.0.E06"},
+ {subject:"eco", date:"2026-10-07", what:"Evaluación en clase 1. La haces con otro grupo, no en tu sesión habitual", weight:"12 % final", type:"ex", time:"09:00–10:30", room:"Aula 6.1.02", format:"Escrito en clase, folios en blanco y bolígrafo, sin calculadora", syllabus:"Hasta teoría de juegos: CORE 1 a 4 (semanas 1 a 3 del temario)"},
+ {subject:"is", date:"2026-10-08", what:"Examen parcial I (SE1), en la clase de teoría del jueves", weight:"15 %", type:"ex", time:"10:45–12:15", room:"Aula 2.3.D01", format:"Presencial, de teoría. Fecha fija", syllabus:"Bloque I: ingeniería de requisitos"},
+ {subject:"ed", date:"2026-10-15", what:"Primer parcial: bloque 1, ítems 1 a 5. En el horario y aula de los jueves", weight:"25 %", type:"ex", time:"09:00–10:30", room:"Aula 2.3.C01", format:"Presencial y escrito"},
  {subject:"is", date:"2026-10-16", what:"Práctica en aula", weight:"clase", type:"cl", time:"12:30–14:00", room:"Aula 4.1.E06"},
  {subject:"ec", date:"2026-10-22", what:"Laboratorio 2 y entrega de la Práctica 1", weight:"entrega", type:"en", time:"14:00–15:30", room:"INF 7.0.J04 y 7.0.J05"},
  {subject:"eco", date:"2026-10-16", noDay:1, label:"viernes por confirmar", online:1, what:"Recuperación online de la magistral del lunes 12 de octubre, festivo", weight:"clase", type:"cl", time:"Por confirmar", format:"Online, en sustitución de la clase perdida"},
  {subject:"eco", date:"2026-11-06", noDay:1, label:"viernes por confirmar", online:1, what:"Recuperación online de la magistral del lunes 2 de noviembre, festivo", weight:"clase", type:"cl", time:"Por confirmar", format:"Online, en sustitución de la clase perdida"},
  {subject:"eco", date:"2026-12-11", noDay:1, label:"viernes por confirmar", online:1, what:"Recuperación online de la magistral del lunes 7 de diciembre, festivo", weight:"clase", type:"cl", time:"Por confirmar", format:"Online, en sustitución de la clase perdida"},
  {subject:"eco", date:"2026-10-26", until:"2026-10-31", online:1, what:"Test online 1 en Aula Global", weight:"8 % final", type:"ex", time:"Abre lunes 9:00, cierra sábado 14:00", format:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
- {subject:"dcp", date:"2026-11-04", what:"Cuestionario de autoevaluación tipo test", weight:"1 pto / 10", type:"ex", time:"12:30–14:00", room:"Aula 6.1.02", format:"Tipo test"},
+ {subject:"dcp", date:"2026-11-04", what:"Cuestionario de autoevaluación tipo test. Fecha definitiva", weight:"1 pto / 10", type:"ex", time:"12:30–14:00", room:"Aula 6.1.02", format:"Tipo test"},
  {subject:"ec", date:"2026-10-29", what:"Laboratorio 3", weight:"laboratorio", type:"cl", time:"14:00–15:30", room:"INF 7.0.J04 y 7.0.J05"},
  {subject:"is", date:"2026-10-30", what:"Práctica en aula", weight:"clase", type:"cl", time:"12:30–14:00", room:"Aula 4.1.E06"},
  {subject:"talf", date:"2026-11-05", what:"JFLAP 2 · gramáticas, tema 4", weight:"obligatorio", type:"en", time:"15:30–17:00", room:"INF 7.0.J02", format:"Práctica en parejas, con entrega"},
  {subject:"ec", date:"2026-11-05", what:"Examen parcial", weight:"parte del 30 %", type:"ex", time:"17:15–18:45", room:"Aula 2.3.D03", format:"Presencial, teoría y práctica"},
  {subject:"talf", date:"2026-11-06", what:"EC1: temas 2, 3 y 4 más JFLAP 1", weight:"25 % aprox.", type:"ex", time:"10:45–12:15", room:"Aula 2.3.C03", format:"Presencial y escrito"},
- {subject:"ed", date:"2026-11-13", what:"Segundo parcial: bloque 2, ítem 6. Presencial y escrito, aula 2.2.C04", weight:"25 %", type:"ex", time:"09:00–10:30", room:"Aula 2.2.C04", format:"Presencial y escrito"},
+ {subject:"ed", date:"2026-11-12", what:"Segundo parcial: bloque 2, ítem 6. En el horario y aula de los jueves", weight:"25 %", type:"ex", time:"09:00–10:30", room:"Aula 2.3.C01", format:"Presencial y escrito"},
  {subject:"talf", date:"2026-11-13", what:"Sesión de ejercicios, aula 4.0.E04, 12:30", weight:"clase", type:"cl"},
  {subject:"eco", date:"2026-11-18", what:"Evaluación en clase 2", weight:"12 % final", type:"ex", time:"10:45–12:15", room:"Aula 10.1.6", format:"Escrito en clase, folios en blanco y bolígrafo"},
  {subject:"ec", date:"2026-11-19", what:"Laboratorio 4", weight:"laboratorio", type:"cl", time:"14:00–15:30", room:"INF 7.0.J04 y 7.0.J05"},
@@ -93,13 +95,21 @@ const EVENTS=[
  {subject:"est", date:"2026-11-23", what:"Segundo parcial: temas 3 y 4. En la clase reducida (prácticas del lunes)", weight:"17,5 %", type:"ex", time:"09:00–10:30", room:"Aula 5.1.04", format:"Presencial, con formulario oficial"},
  {subject:"talf", date:"2026-11-27", what:"JFLAP 3 · autómatas a pila, tema 6", weight:"obligatorio", type:"en", time:"10:45–12:15", room:"INF 7.0.J04", format:"Práctica en parejas, con entrega"},
  {subject:"ed", date:"2026-11-30", what:"Sesión extra del 1081, 12:30, aula 2.3.C04 — choca con Economía", weight:"conflicto", type:"cf"},
- {subject:"is", date:"2026-12-05", noDay:1, what:"Examen parcial II, en clase de teoría", weight:"15 %", type:"ex", time:"10:45–12:15", room:"4.0.E04 (martes) o 2.3.D01 (jueves)", format:"Presencial, en horario de teoría"},
+ {subject:"is", date:"2026-12-03", what:"Examen parcial II (SE1), en la clase de teoría del jueves", weight:"15 %", type:"ex", time:"10:45–12:15", room:"Aula 2.3.D01", format:"Presencial, de teoría. Fecha fija", syllabus:"Bloques II y III: modelado conceptual y modelado arquitectónico"},
  {subject:"ec", date:"2026-12-05", noDay:1, what:"Entrega de la Práctica 2", weight:"entrega", type:"en"},
  {subject:"eco", date:"2026-12-12", noDay:1, online:1, what:"Test online 2 en Aula Global. El lunes 7 es festivo, así que la ventana puede moverse", weight:"8 % final", type:"ex", time:"Abre lunes 9:00, cierra sábado 14:00", format:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
- {subject:"dcp", date:"2026-12-09", what:"Caso práctico final de recapitulación, en clase", weight:"2 ptos / 10", type:"ex", time:"12:30–14:00", room:"Aula 6.1.02", format:"Caso práctico con los textos legales delante"},
+ {subject:"dcp", date:"2026-12-09", what:"Caso práctico final de recapitulación, en clase. Fecha definitiva", weight:"2 ptos / 10", type:"ex", time:"12:30–14:00", room:"Aula 6.1.02", format:"Caso práctico con los textos legales delante"},
  {subject:"talf", date:"2026-12-10", what:"JFLAP 4 · máquinas de Turing", weight:"obligatorio", type:"en", time:"15:30–17:00", room:"INF 7.0.J02", format:"Práctica en parejas, con entrega"},
- {subject:"is", date:"2026-12-12", noDay:1, what:"Entrega del trabajo individual, parte práctica", weight:"20 %", type:"en"},
- {subject:"talf", date:"2026-12-11", what:"EC2: temas 5, 6 y 7 más JFLAP 2, 3 y 4", weight:"25 % aprox.", type:"ex", time:"10:45–12:15", format:"Presencial y escrito"}
+ {subject:"is", date:"2026-12-12", noDay:1, label:"cierre de SE4", what:"Se cierra la nota de los ejercicios individuales en clase (SE4). No hay ejercicio en semanas de examen", weight:"20 %", type:"en"},
+ {subject:"talf", date:"2026-12-11", what:"EC2: temas 5, 6 y 7 más JFLAP 2, 3 y 4", weight:"25 % aprox.", type:"ex", time:"10:45–12:15", format:"Presencial y escrito"},
+ /* finals, 1st ordinary sitting (personal exam timetable, 30 Sep 2026). All in Leganés; the room comes later */
+ {subject:"eco", date:"2027-01-11", what:"Examen final, convocatoria ordinaria", weight:"60 %", type:"ex", time:"09:00–12:00", room:"Leganés · aula por publicar", format:"Mínimo un 3 sobre 10, sin calculadora"},
+ {subject:"dcp", date:"2027-01-12", what:"Examen final teórico, convocatoria ordinaria", weight:"6 ptos / 10", type:"ex", time:"09:00–12:00", room:"Leganés · aula por publicar", format:"Tipo test. Mínimo un 3 sobre 6"},
+ {subject:"talf", date:"2027-01-14", what:"Examen final, convocatoria ordinaria", weight:"50 %", type:"ex", time:"10:00–14:00", room:"Leganés · aula por publicar", format:"Test (25 %) y tres problemas (75 %). Mínimo un 4"},
+ {subject:"est", date:"2027-01-18", what:"Examen final, convocatoria ordinaria", weight:"60 %", type:"ex", time:"18:00–21:00", room:"Leganés · aula por publicar", format:"Con formulario oficial. Mínimo un 4"},
+ {subject:"is", date:"2027-01-20", what:"Examen final (SE2), convocatoria ordinaria", weight:"50 %", type:"ex", time:"10:00–14:00", room:"Leganés · aula por publicar", format:"Teoría y ejercicios de aplicación. Mínimo un 5", syllabus:"Todo el curso: bloques I, II y III"},
+ {subject:"ec", date:"2027-01-22", what:"Examen final, convocatoria ordinaria", weight:"40 %", type:"ex", time:"16:00–20:00", room:"Leganés · aula por publicar", format:"Teoría y práctica. Mínimo un 5"},
+ {subject:"ed", date:"2027-01-25", what:"Examen final, convocatoria ordinaria", weight:"50 %", type:"ex", time:"10:00–14:00", room:"Leganés · aula por publicar", format:"En papel, todo el temario. Mínimo un 4"}
 ];
 
 /* Terms. Weeks are computed from these dates. */
@@ -110,9 +120,8 @@ const TERMS=[
 
 /* Tasks not tied to any subject: [title, detail] */
 const GENERAL_TASKS=[
- ["Apuntar las fechas de los exámenes finales","El calendario oficial solo da las ventanas: 16–22 de diciembre y 11–25 de enero. El día de cada asignatura lo publica el calendario de exámenes de la titulación."],
  ["Preguntar por las cuatro prácticas de los lunes","Si son obligatorias o evaluables, el 1081 no te sirve tal cual."],
- ["Esperar el calendario oficial de exámenes","Las diapositivas de TALF llevan fechas del curso pasado sin actualizar."],
+ ["Mirar las aulas de los finales","Los días y horas ya están (del 11 al 25 de enero, todos en Leganés). Las aulas se publican más cerca de la fecha."],
  ["Decidir cómo pasarle las notas a Claude","Claude no puede leer la nube (JSONBin). De momento: Notas → Copiar notas y pegarlas en el chat."]
 ];
 
@@ -162,17 +171,17 @@ const ADVICE={
   1:["Semana de arranque. Baja de Aula Global la guía docente de las siete asignaturas y comprueba cuáles te faltan.","Estadística II es la única de la que no tienes nada: ni evaluación, ni porcentajes, ni calendario. Empieza por ahí."],
   2:["Es la semana del cambio de grupo de Estructura de Datos. Manda el correo a Israel González Carrasco y guarda su respuesta.","Hasta que Aula Global refleje el 1081 sigues matriculado en el 1082: si cae alguna entrega, pregunta dónde se sube.","Busca pareja para los JFLAP de TALF. La primera sesión es el 2 de octubre y es obligatoria."],
   3:["Jueves 24 cargado: laboratorio 1 de Estructura de Computadores a las 14:00 en INF 7.0.J04 y 7.0.J05, y justo después sesión de TALF a las 15:30 en el aula 1.0.F03.","Instala WepSIM antes del laboratorio para no perder la sesión montando el entorno."],
-  4:["JFLAP 1 el viernes: asistencia obligatoria y entrega en parejas, sobre los temas 2 y 3.","Empieza el proyecto individual de Ingeniería del Software en la práctica del viernes, de 12:30 a 14:00 en el aula 4.1.E06. Se entrega en la semana 14, la peor del cuatrimestre: todo lo que adelantes ahora te lo quitas de diciembre."],
-  5:["En Economía se entra con folios en blanco y bolígrafo, y quien llega tarde no se presenta. Sal con margen desde casa.","El lunes 5 es la primera sesión extra del 1081 y choca con la magistral de Economía. Si aún no has preguntado si es obligatoria, hazlo hoy."],
+  4:["JFLAP 1 el viernes: asistencia obligatoria y entrega en parejas, sobre los temas 2 y 3.","El jueves 8 de la semana que viene es el parcial I de Ingeniería del Software (bloque I, requisitos), en la teoría del jueves, aula 2.3.D01. Repasa esta semana."],
+  5:["En Economía se entra con folios en blanco y bolígrafo, y quien llega tarde no se presenta. Sal con margen desde casa.","Semana cargada: lunes 5, clase extra del 1081 con simulacro de examen (12:30, aula 4.0.E06, choca con Economía); miércoles 7, evaluación en clase de Economía hasta teoría de juegos; jueves 8, parcial I de Ingeniería del Software."],
   6:["Primer parcial de Estructura de Datos el jueves 15 en el aula 2.3.C01: bloque 1, ítems 1 a 5. Vale 2,5 puntos.","Entra modelado orientado a objetos, diseño y análisis de algoritmos, ordenación, búsqueda y recursividad."],
   7:["Entrega de la práctica 1 de Estructura de Computadores junto con el laboratorio 2.","El viernes 23 se resuelve el parcial de Estructura de Datos en clase. Ve con el examen mirado: es la mejor pista de cómo pregunta."],
   8:["El test de Economía abre el lunes a las 9:00 y cierra el sábado a las 14:00 en punto, con intentos ilimitados y cuenta el mejor. Hazlo pronto y repítelo, no lo dejes para el sábado.","Recuerda la fórmula: acertar el 25 % es un cero y el 85 % ya es un 100. En blanco y mal puntúan igual, así que responde todo."],
   9:["La peor semana del cuatrimestre. El jueves encadenas JFLAP 2 a las 15:30 y el parcial de Estructura de Computadores a las 17:15, sin hueco entre medias.","El viernes cae la EC1 de TALF: temas 2, 3 y 4 más JFLAP 1.","Llega con todo preparado desde el miércoles. Esta semana no se improvisa."],
-  10:["Del segundo parcial de Estructura de Datos entra el bloque 2, ítem 6: estructuras lineales.","Aprovecha los huecos de las semanas 10 a 12 para adelantar el trabajo de Ingeniería del Software: la semana 14 no perdona."],
+  10:["Del segundo parcial de Estructura de Datos entra el bloque 2, ítem 6: estructuras lineales.","El segundo parcial de Estructura de Datos es el jueves 12, en el horario y aula de siempre (9:00, 2.3.C01)."],
   11:["El lunes 16 vuelve a haber sesión extra del 1081 a la hora de la magistral de Economía: decide a cuál vas y avisa si hace falta."],
-  12:["El segundo parcial de Estadística II abre la semana el lunes: repasa los temas 3 y 4 el fin de semana, con el formulario oficial.","El resto de la semana úsalo para el trabajo de Ingeniería del Software y para empezar a repasar árboles y grafos de cara al final."],
-  13:["El parcial II de Ingeniería del Software y la entrega de la práctica 2 de Estructura de Computadores aún no tienen día: pregúntalo en clase.","Última sesión extra del 1081 el lunes 30, con el mismo choque de siempre."],
-  14:["Cinco cosas en cinco días: test online 2 de Economía, entrega del trabajo de Ingeniería del Software, caso final de Derecho Civil, JFLAP 4 y EC2 de TALF.","Si has ido adelantando el trabajo de Ingeniería del Software, esta semana es llevadera. Si no, va a doler.","Las clases acaban el viernes 11. Los exámenes ordinarios van del 16 al 22 de diciembre y del 11 al 25 de enero."]
+  12:["El segundo parcial de Estadística II abre la semana el lunes: repasa los temas 3 y 4 el fin de semana, con el formulario oficial.","El resto de la semana úsalo para repasar los bloques II y III de Ingeniería del Software (parcial II el jueves 3 de diciembre) y para empezar árboles y grafos de cara al final."],
+  13:["Jueves 3: parcial II de Ingeniería del Software, bloques II y III, en la teoría del jueves (2.3.D01). La entrega de la práctica 2 de Estructura de Computadores aún no tiene día: pregúntalo en clase.","Última sesión extra del 1081 el lunes 30, con el mismo choque de siempre."],
+  14:["Cuatro cosas en cinco días: test online 2 de Economía, caso final de Derecho Civil el miércoles 9, JFLAP 4 y EC2 de TALF.","Las clases acaban el viernes 11. Tus finales: Economía 11 ene, Derecho 12, TALF 14, Estadística 18, Ingeniería del Software 20, Estructura de Computadores 22 y Estructura de Datos 25."]
  },
  2:{
 
@@ -183,10 +192,10 @@ const ADVICE={
 const TASKS={
  ed:[],
  talf:[],
- is:[["Adelantar el trabajo individual","Se entrega en la semana 14, la peor del cuatrimestre. Trabájalo en las prácticas de octubre y noviembre."]],
+ is:[["Repasar cada tema justo después de clase","Hay hasta 10 ejercicios individuales en clase (SE4, 20 %), a mano, sin avisar la semana, sobre lo que se acaba de explicar."]],
  ec:[["Instalar WepSIM y CREATOR antes del laboratorio 1","El jueves 24 a las 14:00 en INF 7.0.J04. Llega con el entorno montado."]],
  eco:[["Confirmar los viernes de recuperación","Tres magistrales caen en lunes festivo (12 oct, 2 nov y 7 dic) y se recuperan online un viernes. Pregunta las fechas."]],
- dcp:[["Confirmar el día del cuestionario de autoevaluación","En la web está el miércoles 4 de noviembre (semana 9), pero la guía docente lo pone en la semana 8. Pregúntalo en clase o mira Aula Global."]],
+ dcp:[],
  est:[]
 };
 

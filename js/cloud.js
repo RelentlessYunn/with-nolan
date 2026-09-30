@@ -1,5 +1,5 @@
 /* ==========================================================
-   cloud.js — saving to JSONBin (ticked tasks, exam grades, notes for Claude).
+   cloud.js — saving to JSONBin (ticked tasks, exam grades, notes for Claude, your calendar events).
    Rules, so nothing is ever lost:
    · Until the first read has succeeded nothing is written: it retries and
      your changes wait in a queue.
@@ -11,7 +11,7 @@
      page shows your ticks, grades and notes without a connection; changes
      made meanwhile are kept on the device too (as small descriptions, OPS
      below) and go up when the connection comes back, even after closing.
-   Stored keys ("hechas", "grades", "notas") are kept as they were so old data still loads.
+   Stored keys ("hechas", "grades", "notas", "eventos") are kept as they were so old data still loads.
    Usage from other files:
      Cloud.onLoad((rec,info)=>…)     called with the data (and again if refreshed); first with
                                      this device's last copy (info.copy) if there is one
@@ -35,7 +35,9 @@ const Cloud=(function(){
   const OPS={
     done:(rec,a)=>{ const s=new Set(rec.hechas||[]); if(a.done) s.add(a.id); else s.delete(a.id); rec.hechas=[...s]; },
     grade:(rec,a)=>{ rec.grades=rec.grades||{}; if(a.text==="") delete rec.grades[a.id]; else rec.grades[a.id]=a.text; },
-    notes:(rec,a)=>{ rec.notas=a.text; }
+    notes:(rec,a)=>{ rec.notas=a.text; },
+    /* your own calendar events (planner.js): one change per event, so two devices never undo each other */
+    event:(rec,a)=>{ rec.eventos=rec.eventos||{}; if(a.ev) rec.eventos[a.id]=a.ev; else delete rec.eventos[a.id]; }
   };
   const REC_KEY="nolan-cloud", PEND_KEY="nolan-pending";
   const kept=new Map();             /* key → {op,args}: pending changes also on the device */
