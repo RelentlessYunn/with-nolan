@@ -376,7 +376,7 @@ How they are made:
 | **Pleiades** | nine blue-white stars at their real places with spikes, sixty fainter members, and blue reflection haze. The cluster is a 3D ball that turns once in about 80 s and rocks, each faint star on its own orbit; the bright ones twinkle in brightness and colour; the haze streams past with waves of light. |
 | **Ring Nebula** | a 3D barrel of gas seen nearly down its axis: teal inside, then green-yellow, orange and a red rim, a white dwarf in the middle. The barrel spins and its axis wobbles; fine filaments stream outwards; ripples of the star's wind run through it; dark comet-shaped knots turn with it. It hides what lies behind it, so the sky's band does not cross it. |
 | **Vampire star** (`binary`) | a red giant pulled into a point towards a white dwarf, its gas streaming onto a disk; they orbit in 70 s and hide each other. |
-| **Antennae** | two colliding galaxies with merging cores, pink knots of new stars and two long tidal tails; the pair turns in 3D. |
+| **Antennae** | two colliding galaxies with merging cores, pink knots of new stars and two long tidal tails. The pair turns and rocks in 3D, the cores circle each other, the arms turn, clumps of stars stream out along the tails, and each knot of new stars flares and dims on its own beat. |
 
 **Now and then, a supernova** (every 3–9 minutes, Animations = All): a far star flares blue-white. Its **blast wave** comes straight at us at a steady speed, so — like a real explosion seen from afar — it creeps out of the star for about 20 s, then in its last second rushes over the whole sky (`waveAt()`: a sphere of radius x at distance 1 looks x/√(1−x²) wide). It leaves the screen at its farthest corner the moment it reaches us (24 s): a white flash, and the sky shakes (not with animations turned down). Then the star fades through yellow and red and leaves a small ragged shell. `Wonders.nova(x, y, age)` sets one off (tests).
 
@@ -403,6 +403,7 @@ Both sit far behind home: the opening starts beside them, and the sights `#earth
 - **Budget:** phones draw about a third of the stars at about 30 fps; computers at about 60. Volumes are drawn at half resolution (stars stay sharp). The render size adapts if the device cannot keep up. `?tier=phone` / `?tier=desk` forces one.
 - **While scrolling** the sky keeps moving at a lower rate (about 30 fps on a computer, 22 on a phone). It pauses when the tab is hidden and after 2 minutes idle.
 - **Phone fixes:** half-float pictures are blended by hand (`UP_FS`, `bloomAt`), since some phones never blend them (stairs of squares); stars are capped and dust is never fully opaque, so no NaN black dots; dust grids are 8-bit (`R8`).
+- **Sharp stars at any zoom:** a wonder's small stars use `psf()` / `starField()` (in `COMMON`): a core about one screen pixel wide (from `pixelQ()`, the size of a pixel in the wonder's units), a faint glow and a halo only for bright ones, real star colours (`starTint`) and a steep luminosity function. Stars sized in the wonder's own units grew into soft grey blobs as the camera came close.
 - **Seamless angular noise:** noise along an angle from `atan` must use `fbmA()`, not `fbm(vec2(angle*k, y))`: `atan` jumps from π to −π and plain noise shows that jump as a straight line out of the centre.
 - Test hooks: `Universe.seek(seconds)` jumps time, `Universe.shoot()` sends a shooting star and a comet.
 
@@ -489,7 +490,7 @@ Add its values to `SETTINGS_DEFAULTS` and `SETTINGS_OPTIONS` (`prefs.js`), a row
 ## Publishing a version
 
 1. **Never publish two versions under the same number**: the offline copy keeps each file by its `?v=`, so a device would mix old files with the new page.
-2. The current version is **0.83**. In `index.html`, bump the footer (`v0.83`; the entry screen copies it) and every `?v=0.83`, all at once. If the logo changes, also bump the icons' `?v=` in `index.html` and `manifest.webmanifest`.
+2. The current version is **0.84**. In `index.html`, bump the footer (`v0.84`; the entry screen copies it) and every `?v=0.84`, all at once. If the logo changes, also bump the icons' `?v=` in `index.html` and `manifest.webmanifest`.
 3. Push to `main`. GitHub Pages takes a minute or two; the footer number shows which version you see.
 
 ---
