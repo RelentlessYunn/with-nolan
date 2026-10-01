@@ -223,8 +223,11 @@ const Universe=(function(){
   function orbit(){
     const t=life, a=Math.min(1,life/10)*orbitK, sec=GALAXIES[orbitAt]||PLACES[orbitAt]?1:0;
     if(orbitAt==="gate") return null;
-    const yaw=a*(sec?.15:.075)*(Math.sin(t*.052)*.8+Math.sin(t*.021+1.3)*.2)-ptr.x*.045*orbitK;
-    const pitch=a*(sec?.07:.04)*Math.sin(t*.039+.7)+ptr.y*.03*orbitK;
+    /* at a sight it goes further round, and sooner: the thing you came to look at is seen from one side,
+       then the other, so its depth shows (about a minute for each swing) */
+    const sight=PLACES[orbitAt]?1:0;
+    const yaw=a*(sight?.3:sec?.15:.075)*(Math.sin(t*(sight?.1:.052))*.8+Math.sin(t*.021+1.3)*.2)-ptr.x*.045*orbitK;
+    const pitch=a*(sight?.13:sec?.07:.04)*Math.sin(t*(sight?.075:.039)+.7)+ptr.y*.03*orbitK;
     if(Math.abs(yaw)+Math.abs(pitch)<1e-6) return null;
     const cp=Math.cos(pitch), sp=Math.sin(pitch), cy=Math.cos(yaw), sy=Math.sin(yaw);
     /* R = turn about the vertical (yaw) · turn about the horizontal (pitch) */

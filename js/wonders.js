@@ -89,31 +89,38 @@ float edgeFade(){ return 1.-smoothstep(.82,1.,max(abs(vQ.x),abs(vQ.y))); }
 
   /* ---------- the Orion Nebula ---------- */
   skyWonder("orion",{at:{d:[.8,.1],m:[-.12,.3]},z:140,R:13.5,rot:.35,blend:"over",sight:"orion",vis:.62,shader:COMMON+`
-float warp(vec2 p){ vec2 q=vec2(fbm(p+uS+vec2(0.,uT*.006),5),fbm(p+vec2(5.2,1.3)+uS-vec2(uT*.005,0.),5)); return fbm(p+2.3*q+vec2(uT*.012,0.),5); }
+/* gas that flows: the warp itself drifts and turns, so the clouds churn and stream, not just slide */
+float warp(vec2 p,float k){ float t=uT*k;
+  vec2 q=vec2(fbm(p+uS+vec2(t*.6,t*.25),4),fbm(p+vec2(5.2,1.3)+uS-vec2(t*.3,t*.5),4));
+  return fbm(p+2.3*q+vec2(t,-t*.4),4); }
+mat2 turn(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
 void main(){
-  vec2 p0=vQ*1.15, p=p0+uPar*.3;                          /* the glowing gas lies behind */
-  vec2 pf=p0-uPar*.35;                                    /* the veil of dust in front of it */
-  float r=length(p);
-  float env=exp(-r*r*2.3);
-  float n=warp(p*1.7);
+  /* three depths: the glowing gas far behind, a second sheet of gas nearer, and the dust veil in front.
+     As the camera goes round they slide against each other by their depth: the nebula has thickness */
+  vec2 p0=vQ*1.15;
+  vec2 pb=turn(uT*.004)*(p0+uPar*.55), pm=turn(-uT*.003)*(p0+uPar*.22), pf=p0-uPar*.5;
+  float r=length(pb), env=exp(-r*r*2.3), envm=exp(-dot(pm,pm)*2.6);
+  float n=warp(pb*1.7,.03), n2=warp(pm*2.4+7.,.045);
   float gas=pow(clamp(n*1.4-.28,0.,1.),1.5)*env;
-  /* the bright heart around the Trapezium, and the "wings" of the nebula */
-  vec2 c=p-vec2(.08,-.04); float core=exp(-dot(c,c)*22.);
-  float wings=exp(-pow(p.y+.9*p.x*p.x,2.)*7.)*exp(-abs(p.x)*1.1);
-  vec3 col=vec3(.98,.24,.42)*gas*(.55+1.1*wings)*1.35
+  float sheet=pow(clamp(n2*1.5-.45,0.,1.),1.6)*envm;
+  /* the bright heart around the Trapezium (it breathes a little: the stars' wind), and the "wings" */
+  vec2 c=pm-vec2(.08,-.04); float core=exp(-dot(c,c)*22.)*(1.+.12*sin(uT*.6));
+  float wings=exp(-pow(pb.y+.9*pb.x*pb.x,2.)*7.)*exp(-abs(pb.x)*1.1);
+  vec3 col=vec3(.98,.24,.42)*gas*(.55+1.1*wings)*1.25
           +vec3(1.,.55,.32)*gas*.4*smoothstep(.25,.9,r)
-          +vec3(.45,.66,1.)*core*(.35+.6*n)*gas*2.2+vec3(1.,.86,.9)*pow(core,4.)*.55;
-  /* a veil of dust in front, in filaments */
-  float fil=1.-abs(fbm(pf*3.4+vec2(9.+uT*.008,uS),5)*2.-1.);
-  float dust=smoothstep(.55,.9,fil)*smoothstep(.35,.7,fbm(pf*2.+3.,4))*exp(-dot(pf,pf)*2.3);
-  /* the Trapezium: four hot stars close together, and young stars scattered in the gas */
+          +vec3(1.,.42,.5)*sheet*.7
+          +vec3(.45,.66,1.)*core*(.35+.6*n2)*(gas+sheet)*2.+vec3(1.,.86,.9)*pow(core,4.)*.55;
+  /* the dust veil in front, its filaments drifting */
+  float fil=1.-abs(fbm(pf*3.4+vec2(9.+uT*.03,uS-uT*.012),5)*2.-1.);
+  float dust=smoothstep(.55,.9,fil)*smoothstep(.35,.7,fbm(pf*2.+3.+uT*.01,4))*exp(-dot(pf,pf)*2.3);
+  /* the Trapezium, in the heart of the gas, and young stars scattered at three depths, twinkling */
   vec2 tp[4]=vec2[4](vec2(.05,-.07),vec2(.11,-.03),vec2(.08,-.11),vec2(.13,-.09));
-  vec2 pt=p0+uPar*.1;                                     /* the Trapezium, in the heart of the gas */
-  float st=0.; for(int i=0;i<4;i++){ vec2 d=pt-tp[i]; st+=(exp(-dot(d,d)*9000.)*2.6+exp(-dot(d,d)*700.)*.3)*(.9+.1*sin(uT*1.7+float(i)*2.3)); }
-  /* young stars scattered through it, in two layers at different depths, twinkling */
+  vec2 pt=p0+uPar*.2;
+  float st=0.; for(int i=0;i<4;i++){ vec2 d=pt-tp[i]; st+=(exp(-dot(d,d)*9000.)*2.6+exp(-dot(d,d)*700.)*.3)*(.85+.15*sin(uT*1.7+float(i)*2.3)); }
   float sp=0.;
-  for(int k=0;k<2;k++){ vec2 q=(p0+uPar*(k==0?.45:-.15))*(k==0?24.:17.)+float(k)*.37; vec2 g=floor(q); float hs=h12(g+uS+float(k)*5.1);
-    vec2 f=fract(q)-.5-(vec2(h12(g+3.1),h12(g+7.7))-.5)*.7; sp+=step(.9,hs)*exp(-dot(f,f)*70.)*(.35+hs)*(.75+.25*sin(uT*(1.+hs*2.)+hs*40.)); }
+  for(int k=0;k<3;k++){ float dep=k==0?.6:k==1?.1:-.35;
+    vec2 q=(p0+uPar*dep)*(k==0?26.:k==1?18.:13.)+float(k)*.37; vec2 g=floor(q); float hs=h12(g+uS+float(k)*5.1);
+    vec2 f=fract(q)-.5-(vec2(h12(g+3.1),h12(g+7.7))-.5)*.7; sp+=step(.9,hs)*exp(-dot(f,f)*70.)*(.35+hs)*(.6+.4*sin(uT*(1.+hs*3.)+hs*40.)); }
   vec3 C=col*(1.-dust*.85)+vec3(.85,.9,1.)*(st+sp*env*1.3);
   float e=edgeFade();
   o=vec4(C*uA*e,clamp(dust*.75,0.,.8)*uA*e);
@@ -121,34 +128,45 @@ void main(){
 
   /* ---------- the Pleiades ---------- */
   skyWonder("pleiades",{at:{d:[-.85,-.03],m:[.72,.05]},z:120,R:8,rot:-.2,sight:"pleiades",vis:.68,shader:COMMON+`
-/* the nine brightest (positions and brightness after the real cluster) */
+/* the nine brightest (positions and brightness after the real cluster), each at its own depth */
 const vec3 S[9]=vec3[9](vec3(0.,0.,1.),vec3(-.48,.05,.62),vec3(-.5,-.08,.2),vec3(.36,-.1,.58),vec3(.17,.2,.42),
                         vec3(.23,-.26,.5),vec3(.35,-.44,.38),vec3(.49,-.28,.16),vec3(.33,-.56,.14));
+const float Z[9]=float[9](.05,-.32,.28,.18,-.22,.36,-.12,.3,-.28);
+/* a cluster is a ball of stars, not a picture: it turns slowly (and as the camera goes round), so its
+   stars pass in front of and behind each other, the near ones moving across the far ones */
+vec2 place(vec3 x,float yaw,float pitch){
+  float cy=cos(yaw), sy=sin(yaw), cp=cos(pitch), sp=sin(pitch);
+  vec3 r=vec3(cy*x.x+sy*x.z,x.y,-sy*x.x+cy*x.z); r=vec3(r.x,cp*r.y-sp*r.z,sp*r.y+cp*r.z);
+  return r.xy/(1.-r.z*.18);                                /* a little perspective: the near side larger */
+}
 void main(){
-  vec2 p0=vQ*1.1, p=p0+uPar*.25; vec3 C=vec3(0.);       /* the haze hangs a little behind the stars */
-  /* the blue haze: a cloud of dust the cluster is drifting through, lit by its stars. It
-     hangs in fine parallel streaks, thickest round Merope, fading away from each star */
-  float ca=cos(-.6), sa=sin(-.6); vec2 q=vec2(ca*p.x-sa*p.y,sa*p.x+ca*p.y)+vec2(uT*.006,0.);
-  float streak=fbm(q*vec2(2.,5.)+uS,5), broad=fbm(p*2.6+uS+4.+vec2(0.,uT*.004),4);
-  float fine=pow(1.-abs(fbm(q*vec2(3.,12.)+uS*1.7,4)*2.-1.),2.);
+  vec2 p0=vQ*1.1; vec3 C=vec3(0.);
+  float yaw=uT*.035+uPar.x*1.6, pitch=.15*sin(uT*.021)+uPar.y*1.2;
+  vec2 P[9]; for(int i=0;i<9;i++) P[i]=place(vec3(S[i].xy*.78,Z[i]),yaw,pitch);
+  /* the blue haze: dust the cluster drifts through, lit by its stars; two sheets at different depths,
+     streaming slowly past each other */
+  vec2 p=p0+uPar*.3, ph=p0-uPar*.25;
+  float ca=cos(-.6), sa=sin(-.6); vec2 q=vec2(ca*p.x-sa*p.y,sa*p.x+ca*p.y)+vec2(uT*.02,0.);
+  vec2 q2=vec2(ca*ph.x-sa*ph.y,sa*ph.x+ca*ph.y)-vec2(uT*.014,uT*.004);
+  float streak=fbm(q*vec2(2.,5.)+uS,5), broad=fbm(p*2.6+uS+4.+vec2(0.,uT*.012),4);
+  float fine=pow(1.-abs(fbm(q*vec2(3.,12.)+uS*1.7,4)*2.-1.),2.), near=pow(1.-abs(fbm(q2*vec2(2.5,9.)+uS*2.3,4)*2.-1.),3.);
   float lit=0.;
-  for(int i=0;i<9;i++){ vec2 d=p-S[i].xy*.78; float k=i==3?1.8:1.; lit+=S[i].z*k*(exp(-dot(d,d)*9.)*.8+exp(-length(d)*9.)*.35); }
+  for(int i=0;i<9;i++){ vec2 d=p-P[i]; float k=i==3?1.8:1.; lit+=S[i].z*k*(exp(-dot(d,d)*9.)*.8+exp(-length(d)*9.)*.35); }
   float dust=smoothstep(.3,.75,broad*.6+streak*.6);
-  C+=vec3(.3,.5,1.)*lit*dust*(.6+.5*fine)*.5;
+  C+=vec3(.3,.5,1.)*lit*(dust*(.6+.5*fine)+near*.25)*.5;
   C+=vec3(.5,.66,1.)*lit*lit*.05;
   /* the stars: hot and blue-white, the brightest with the telescope's spikes */
   for(int i=0;i<9;i++){
-    float z=h12(vec2(float(i)*3.7,uS))-.5;               /* each star at its own depth in the cluster */
-    vec2 d=p0+uPar*z*.7-S[i].xy*.78; float b=S[i].z*(.9+.1*sin(uT*2.3+float(i)*2.1)), r2=dot(d,d), r=sqrt(r2);
+    vec2 d=p0-P[i]; float b=S[i].z*(.88+.12*sin(uT*2.3+float(i)*2.1)), r2=dot(d,d), r=sqrt(r2);
     float spk=(exp(-abs(d.x)*420.)+exp(-abs(d.y)*420.))*exp(-r*(9.-5.*b))*b*b;
     C+=vec3(.78,.87,1.)*b*(exp(-r2*9000.)*5.+exp(-r2*900.)*.9+exp(-r*22.)*.22)+vec3(.7,.82,1.)*spk*.9;
   }
-  /* the fainter members, a hundred or so, thinning outwards: two scattered layers (one grid alone
-     showed its rows up close), each star anywhere in its cell */
-  for(int k=0;k<2;k++){
-    float sc=k==0?13.:23., sd=uS+1.+float(k)*9.3; vec2 pk=p0+uPar*(k==0?-.3:.4);
-    vec2 g=floor(pk*sc+float(k)*.37); float hs=h12(g+sd); vec2 f=fract(pk*sc+float(k)*.37)-.5-(vec2(h12(g+sd+2.1),h12(g+sd+5.3))-.5)*.84;
-    C+=vec3(.82,.88,1.)*step(k==0?.84:.9,hs)*exp(-dot(f,f)*(k==0?140.:220.))*(.25+hs)*exp(-dot(p,p)*1.1)*(k==0?1.:.7);
+  /* the fainter members, turning with the rest: sixty of them, each somewhere in the ball */
+  for(int i=0;i<60;i++){
+    float fi=float(i);
+    vec3 x=(vec3(h12(vec2(fi,uS+1.)),h12(vec2(fi,uS+2.)),h12(vec2(fi,uS+3.)))-.5)*vec3(1.9,1.6,1.2);
+    vec2 d=p0-place(x,yaw,pitch); float hs=h12(vec2(fi,uS+4.));
+    C+=vec3(.82,.88,1.)*exp(-dot(d,d)*(5000.+6000.*hs))*(.3+.7*hs)*(.75+.25*sin(uT*(1.3+hs*2.)+fi));
   }
   o=vec4(C*uA*edgeFade(),0.);
 }`});
@@ -162,9 +180,9 @@ void main(){
    small dark knots of dust stud the inner edge of the ring. */
 void main(){
   vec2 p=vQ*1.25;
-  vec3 ax=normalize(vec3(uPar*.9+vec2(.1,-.07),1.)), u1=normalize(cross(vec3(0.,1.,0.),ax)), u2=cross(ax,u1);
-  float rp=length(p/vec2(1.,.82)), ang=atan(p.y,p.x/1.)+uT*.006;
-  float fil=fbm(vec2(ang*2.6,rp*9.-uT*.01)+uS,4);                 /* filaments running outwards */
+  vec3 ax=normalize(vec3(uPar*1.1+vec2(.1,-.07)+.14*vec2(cos(uT*.045),sin(uT*.045)),1.)), u1=normalize(cross(vec3(0.,1.,0.),ax)), u2=cross(ax,u1);
+  float rp=length(p/vec2(1.,.82)), ang=atan(p.y,p.x)+uT*.02;
+  float fil=fbm(vec2(ang*2.6,rp*9.-uT*.06)+uS,4);                 /* filaments, streaming outwards */
   vec3 C=vec3(0.);
   const int N=12;                                                 /* (light enough for a phone filling its screen with it) */
   for(int i=0;i<N;i++){
@@ -173,7 +191,7 @@ void main(){
     float h=dot(x,ax); vec2 q=vec2(dot(x,u1),dot(x,u2)*1.2);
     float R3=length(vec3(q,h*.7));
     float shell=exp(-pow((R3-.6)/.12,2.)), waist=exp(-h*h*3.);
-    float n=vn3(x*5.+uS+vec3(0.,0.,uT*.01));
+    float n=vn3(x*5.+uS+vec3(uT*.02,-uT*.015,uT*.03));        /* the gas churns */
     float kw=exp(-pow((R3-.53)/.06,2.)), knot=kw>.02?smoothstep(.72,.9,vn3(x*16.+uS*3.))*kw:0.;
     float dens=(shell*(.28+1.15*waist)+exp(-pow((R3-.42)/.2,2.))*.18)*(.45+.8*n)*(.6+.8*fil)*(1.-.75*knot);
     /* teal inside, then green-yellow, orange and red at the rim (going straight from teal to orange passed through grey) */
@@ -253,14 +271,19 @@ vec2 tail(vec2 p,vec2 c,float th0,float dir,float sd){
 float disk(vec2 p,vec2 c,float ang,float sq){
   vec2 d=p-c; float ca=cos(ang), sa=sin(ang); d=vec2(ca*d.x-sa*d.y,sa*d.x+ca*d.y)*vec2(1.,sq);
   d+=.04*vec2(fbm(d*5.+3.,3)-.5,fbm(d*5.+9.,3)-.5);
-  float r=length(d), th=atan(d.y,d.x), arm=.5+.5*sin(2.*th-5.5*log(r+.03));
+  float r=length(d), th=atan(d.y,d.x), arm=.5+.5*sin(2.*th-5.5*log(r+.03)-uT*.12);   /* its arms turn */
   return exp(-r/.085)*1.1+exp(-r/.19)*(.35+.65*arm)*.95;
 }
 void main(){
   /* the two disks in the middle, one tail thrown towards us and the other away: they slide apart as the view turns */
-  vec2 p=vQ*1.05; vec2 c1=vec2(-.09,.05), c2=vec2(.1,-.05);
+  /* the pair is a 3D thing turning slowly (and as the camera goes round): its plane foreshortens and swings,
+     the cores circle each other a little, the tails sweep */
+  float yaw=.38*sin(uT*.045)+uPar.x*1.3, pit=.2*sin(uT*.033+1.)+uPar.y*.9;
+  vec2 p=vQ*1.05; p=vec2(p.x/max(cos(yaw),.55),p.y/max(cos(pit),.7)); p+=vec2(sin(yaw),sin(pit))*.06;
+  float orb=uT*.03; vec2 c1=vec2(-.09,.05)+.02*vec2(cos(orb),sin(orb)), c2=vec2(.1,-.05)-.02*vec2(cos(orb),sin(orb));
   float d1=disk(p,c1,.5,1.5), d2=disk(p,c2,-.8,1.8);
-  vec2 T1=tail(p-uPar*.3,c1,1.9,1.,1.+uT*.01), T2=tail(p+uPar*.3,c2,-1.25,1.,5.-uT*.01);
+  float sw=.12*sin(uT*.05);
+  vec2 T1=tail(p-uPar*.45-vec2(sin(yaw),0.)*.08,c1,1.9+sw,1.,1.+uT*.03), T2=tail(p+uPar*.45+vec2(sin(yaw),0.)*.08,c2,-1.25-sw,1.,5.-uT*.03);
   /* the old stars: warm light near the hearts, bluer out in the disks and the tails */
   vec3 C=mix(vec3(.62,.7,1.),vec3(1.,.84,.6),smoothstep(.3,1.2,d1+d2))*(d1+d2)*.75;
   C+=vec3(1.,.9,.72)*(exp(-dot(p-c1,p-c1)*700.)+exp(-dot(p-c2,p-c2)*900.)*.8)*1.2;

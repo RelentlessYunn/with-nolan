@@ -29,7 +29,7 @@ const UNIVERSE_GALAXIES=(function(){
             young:{h:.36,k:1.7}, hii:{c1:1.45,c2:2.1}, dust:{h:.36,k:1.8,lag:.2}},
       bulge:{I:.26, Rb:.055, n:2, q:[1,.95,.8]},
       col:{old:[1,.9,.78], young:[.55,.72,1], hii:[1,.34,.6], core:[1,.86,.66]},
-      rot:{vmax:.05, ac:.05, pat:-.018},             /* it turns visibly */
+      rot:{vmax:.09, ac:.05, pat:-.04},              /* it turns visibly: its arms sweep round while you look */
       stars:{old:18000, young:11000, hii:1800, bulge:6000, halo:900, gc:8},
       gain:{disk:1.45, young:1, hii:1.2, dust:2.8, bulge:1, stars:1}},
     /* UC3M: a golden barred spiral (like NGC 1300), low on the left: a straight bar of old stars
@@ -58,7 +58,7 @@ const UNIVERSE_GALAXIES=(function(){
             young:{h:.5,k:1}, hii:{c1:9,c2:10}, dust:{h:.6,k:1,lag:0}, ring:{a:.66,w:.1,light:.55,dust:.35,stars:2600}},
       bulge:{I:.55, Rb:.11, n:2.5, q:[1,1,.95]},
       col:{old:[.72,.78,.98], young:[.72,.8,1], hii:[1,.5,.75], core:[1,.84,.55]},
-      rot:{vmax:.012, ac:.08, pat:0},
+      rot:{vmax:.04, ac:.08, pat:.025},               /* its knotty ring turns */
       stars:{old:3000, bulge:9000, halo:900, gc:6},
       gain:{disk:.9, young:0, hii:0, dust:1, bulge:1, stars:1}},
     /* a galaxy seen edge-on (like M104): a big bright bulge and a dark ring of dust. A sight too */
@@ -67,7 +67,7 @@ const UNIVERSE_GALAXIES=(function(){
             young:{h:.4,k:1}, hii:{c1:9,c2:10}, dust:{h:.5,k:1,lag:0}, ring:{a:.72,w:.085,light:.35,dust:3.2}},
       bulge:{I:.9, Rb:.3, n:3, q:[1,1,.8]},
       col:{old:[1,.93,.84], young:[.8,.85,1], hii:[1,.5,.6], core:[1,.94,.84]},
-      rot:{vmax:.012, ac:.1, pat:0},
+      rot:{vmax:.03, ac:.1, pat:.015},
       stars:{old:12000, bulge:16000, halo:1200, gc:14},
       gain:{disk:.3, young:0, hii:0, dust:2.6, bulge:1, stars:1}}
   };
