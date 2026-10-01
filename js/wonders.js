@@ -15,8 +15,9 @@
    · The Antennae: two galaxies colliding, their cores merging, pink
      knots of new stars where they crash, and two long tails flung out.
    · Now and then, a supernova: a star in a far galaxy flares in a second,
-     blue-white; its blast wave rushes out, fills the sky and sweeps over
-     the camera in a white flare; the star fades, turns yellow and red, and
+     blue-white; its blast wave creeps out of it for a long while, then,
+     as it comes close, rushes over the whole sky and sweeps over the camera
+     in a white flash that shakes the sky; the star fades, turns yellow and red, and
      leaves a small ragged shell of glowing gas.
    · The Earth and the Moon: where every opening of the app starts (the
      camera leaves them behind on its way home): the Earth turning, its
@@ -47,6 +48,12 @@ float fbm3(vec3 p,int oct){ float t=0.,a=.5,n=0.; for(int o=0;o<6;o++){ if(o>=oc
      depths slide against each other by it, so a wonder has depth when the camera moves or turns */
   const COMMON=`in vec2 vQ; out vec4 o; uniform float uT, uA, uS; uniform vec2 uPar;
 float edgeFade(){ return 1.-smoothstep(.82,1.,max(abs(vQ.x),abs(vQ.y))); }
+/* fbm along an angle a (from atan) that wraps round without a seam: atan jumps from π to -π, and plain
+   fbm(a*k) would show that jump as a straight line out of the centre, so a blends into a-2π as it nears π */
+float fbmA(float a,float k,vec2 off,float y,int oct){
+  float t=(a+3.1415927)/6.2831853;
+  return mix(fbm(vec2(a*k,y)+off,oct),fbm(vec2((a-6.2831853)*k,y)+off,oct),smoothstep(0.,1.,t));
+}
 `;
   /* where a wonder is on the screen now (null: not in view) */
   function spot(api,p,R){
@@ -182,8 +189,8 @@ void main(){
 void main(){
   vec2 p=vQ*1.25;
   vec3 ax=normalize(vec3(uPar*1.1+vec2(.1,-.07)+.14*vec2(cos(uT*.045),sin(uT*.045)),1.)), u1=normalize(cross(vec3(0.,1.,0.),ax)), u2=cross(ax,u1);
-  float rp=length(p/vec2(1.,.82)), ang=atan(p.y,p.x)+uT*.02;
-  float fil=fbm(vec2(ang*2.6,rp*9.-uT*.06)+uS,4);                 /* filaments, streaming outwards */
+  float rp=length(p/vec2(1.,.82)), ang=atan(p.y,p.x);
+  float fil=fbmA(ang,2.6,vec2(uS+uT*.052,uS),rp*9.-uT*.06,4);                 /* filaments, streaming outwards */
   vec3 C=vec3(0.); float cov=0.;                                  /* cov: how much gas the ray went through */
   const int N=12;                                                 /* (light enough for a phone filling its screen with it) */
   for(int i=0;i<N;i++){
@@ -225,7 +232,7 @@ void main(){
   /* the disk round the white dwarf, and the hot spot where the stream lands */
   vec2 dB=p-B; float rd=length(dB/vec2(1.,ci+.08));
   float disk=smoothstep(.27,.06,rd)*smoothstep(.012,.03,rd);
-  vec3 dc=mix(vec3(.75,.85,1.),vec3(1.,.55,.3),smoothstep(.04,.24,rd))*disk*(1.3+.7*fbm(vec2(atan(dB.y,dB.x)*3.-uT*2.,rd*20.),3));
+  vec3 dc=mix(vec3(.75,.85,1.),vec3(1.,.55,.3),smoothstep(.04,.24,rd))*disk*(1.3+.7*fbmA(atan(dB.y,dB.x),3.,vec2(-uT*2.,0.),rd*20.,3));
   vec2 hot=B-toB*.16; dc+=vec3(1.,.9,.8)*exp(-dot(p-hot,p-hot)*900.)*1.5;
   dc+=vec3(.85,.93,1.)*exp(-dot(dB,dB)*9000.)*3.;
   /* the stream: from the giant's tip, curving (the orbit turns under it) onto the disk */
@@ -313,8 +320,18 @@ void main(){
   /* ---------- now and then, a supernova ---------- */
   let nova=null, nextNova=0;
   /* its life, seen in seconds: k runs 0 → 1 over its 70 s. The blast wave leaves the star at once and
-     reaches the camera WAVE_T seconds later (eased: fast, then slowing as it spreads) */
-  const NOVA_DUR=70, WAVE_T=7;
+     comes straight at us at a steady speed, reaching us WAVE_T seconds later. Seen from here it is a
+     sphere of radius x (its share of the way) at distance 1: its edge looks x/√(1−x²) wide, so for a long
+     while it only creeps out of the far star, then in its last moments it rushes over the whole sky
+     (WAVE_K: how wide it looks halfway; it covers the screen at x = HIT) */
+  const NOVA_DUR=70, WAVE_T=24, HIT=.975, WAVE_K=HIT/Math.sqrt(1-HIT*HIT);
+  /* how far over the screen the wave is (1: every corner, the moment it reaches us) and the flash then */
+  function waveAt(age){
+    const x=age/WAVE_T;
+    if(x<HIT) return {w:x/Math.sqrt(1-x*x)/WAVE_K,f:0};
+    const s=age-HIT*WAVE_T;                              /* seconds since it reached us */
+    return {w:1+s*4,f:Math.min(1,s/.08)*Math.exp(-s/1.3)};
+  }
   const novaW={id:"nova",shaders:{main:COMMON+`
 uniform float uK;     /* how far along its life (0 to 1) */
 void main(){
@@ -329,7 +346,7 @@ void main(){
   C+=vec3(.75,.9,1.)*exp(-r*r*14.)*exp(-k*60.)*smoothstep(0.,.006,k)*.8;
   /* much later: the debris, a ragged small shell of glowing gas (hydrogen red, oxygen teal) */
   float R=.05+.2*smoothstep(.2,1.,k), a=atan(p.y,p.x);
-  float fil=fbm(vec2(a*2.5,r*7.)+uS,4), rag=R*(1.+.3*(fbm(vec2(a*2.,uS),3)-.5));
+  float fil=fbmA(a,2.5,vec2(uS),r*7.,4), rag=R*(1.+.3*(fbmA(a,2.,vec2(0.),uS,3)-.5));
   float shell=(exp(-pow((r-rag)/(.03+.04*k),2.))+.25*smoothstep(rag,rag*.3,r))*smoothstep(.2,.55,k)*(1.-smoothstep(.85,1.,k));
   C+=mix(vec3(.3,.85,.8),vec3(1.,.3,.35),smoothstep(.45,.8,fil))*shell*pow(fil,1.5)*1.1;
   o=vec4(C*uA*edgeFade()*(1.-smoothstep(.9,1.,k)),0.);
@@ -339,19 +356,20 @@ void main(){
      glowing; it fills the sky and, as it sweeps over the camera, everything flares white for a moment */
   wave:COMMON+`
 uniform float uW;     /* how far it has come: 0 at the star, 1 at the camera */
+uniform float uF;     /* the flash as it sweeps over us (0 to 1) */
 void main(){
   vec2 p=vQ; float r=length(p), a=atan(p.y,p.x), w=uW;
-  float boil=fbm(vec2(a*4.,w*6.-uT*.4)+uS,4), fine=fbm(p*9./max(w,.08)+uS+uT*.2,3);
+  float boil=fbmA(a,4.,vec2(uS),w*6.-uT*.4,4), fine=fbm(p*9./max(w,.08)+uS+uT*.2,3);
   float wr=w*(1.+.07*(boil-.5)*2.);                       /* the front is ragged */
-  float th=.008+.035*w;                                    /* thicker as it comes closer */
+  float th=.006+.05*w*w;                                   /* thicker as it comes closer */
   float lead=exp(-pow((r-wr)/th,2.)), trail=exp(-pow((r-wr+th*1.8)/(th*1.6),2.));
   float inside=smoothstep(wr,wr*.2,r)*(.25+.75*fine);
   float fade=1.-smoothstep(.85,1.08,w);                    /* it has passed us */
   vec3 C=vec3(.7,.86,1.)*lead*(.6+.7*fine)*1.15+vec3(1.,.55,.25)*trail*(.5+.8*boil)*.9
         +vec3(1.,.62,.38)*inside*.12*(1.-w*.5);
-  C*=fade*(.35+.65*smoothstep(0.,.12,w));
-  /* sweeping over the camera: the whole sky flares, then lets go */
-  C+=vec3(.78,.88,1.)*exp(-pow((w-1.)/.06,2.))*.45;
+  C*=fade*(.45+.55*smoothstep(0.,.25,w))*(1.+1.2*smoothstep(.4,1.,w));   /* brighter the closer it comes */
+  /* sweeping over the camera: the whole sky flares white, the hot gas glows orange round us, then lets go */
+  C+=(vec3(.9,.94,1.)*.85+vec3(1.,.5,.2)*.35*(1.-r*.4)*(.6+.8*fine))*uF;
   o=vec4(C*uA,0.);
 }`},
     draw(api,ph,t,now){
@@ -363,22 +381,33 @@ void main(){
       }
       if(!nova) return;
       const age=clock-nova.t0, k=age/NOVA_DUR;
-      if(k>=1){ nova=null; nextNova=clock+240+Math.random()*300; return; }
-      const a=api.onScreen(nova.p); if(!a) return;
+      if(k>=1){ shake(api.gl.canvas,-1); nova=null; nextNova=clock+240+Math.random()*300; return; }
+      const a=api.onScreen(nova.p); if(!a){ shake(api.gl.canvas,-1); return; }
       if(ph==="far"){
         const R=Math.min(api.W,api.H)*.16;
         const u=api.sprite(novaW.prog.main,a[0],a[1],R,R,0);
         set(u,"uK",k); set(u,"uA",api.fade); set(u,"uS",nova.seed); set(u,"uT",t);
         api.add(); api.draw(); api.need();
-      } else if(ph==="near"&&age<WAVE_T*1.15){
-        /* over everything else: a square round the star big enough to reach every corner of the screen */
-        const x=Math.min(1.12,age/WAVE_T), w=1-Math.pow(1-Math.min(1,x),2.2)+Math.max(0,x-1);
-        const R=Math.hypot(api.W,api.H)*1.05;
+      } else if(ph==="near"&&age<WAVE_T*HIT+5){
+        /* over everything else: a square round the star just reaching the farthest corner of the screen,
+           so the front leaves the screen at that corner the moment it reaches us */
+        const {w,f}=waveAt(age);
+        const R=Math.hypot(Math.max(a[0],api.W-a[0]),Math.max(a[1],api.H-a[1]))*1.02;
         const u=api.sprite(novaW.prog.wave,a[0],a[1],R,R,0);
-        set(u,"uW",w); set(u,"uA",api.fade); set(u,"uS",nova.seed); set(u,"uT",t);
+        set(u,"uW",w); set(u,"uF",f);
+        shake(api.gl.canvas,age-HIT*WAVE_T); set(u,"uA",api.fade); set(u,"uS",nova.seed); set(u,"uT",t);
         api.add(); api.draw(); api.need();
       }
     }};
+  /* the shock shakes the sky for a moment as it passes (not when animations are turned down) */
+  let shaking=false;
+  function shake(cv,s){
+    const calm=document.documentElement.dataset.motion&&document.documentElement.dataset.motion!=="full"
+      ||matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(s<0||s>1.6||calm){ if(shaking){ cv.style.transform=""; shaking=false; } return; }
+    const A=9*Math.exp(-s/.35)*Math.min(1,s/.05);
+    cv.style.transform=`translate(${(Math.random()-.5)*A}px,${(Math.random()-.5)*A}px) scale(1.02)`; shaking=true;
+  }
   function spawnNova(api,clock,x,y){
     /* far away, somewhere away from the middle of the screen */
     if(x===undefined) do{ x=Math.random()*1.8-.9; y=Math.random()*1.7-.85; }while(Math.abs(x)<.35&&Math.abs(y)<.35);
