@@ -149,31 +149,37 @@ vec2 place(vec3 x,float yaw,float pitch){
 }
 void main(){
   vec2 p0=vQ*1.1; vec3 C=vec3(0.);
-  float yaw=uT*.035+uPar.x*1.6, pitch=.15*sin(uT*.021)+uPar.y*1.2;
+  float yaw=uT*.075+uPar.x*1.6, pitch=.3*sin(uT*.04)+uPar.y*1.2;     /* a turn in about 80 s, rocking up and down */
   vec2 P[9]; for(int i=0;i<9;i++) P[i]=place(vec3(S[i].xy*.78,Z[i]),yaw,pitch);
   /* the blue haze: dust the cluster drifts through, lit by its stars; two sheets at different depths,
      streaming slowly past each other */
   vec2 p=p0+uPar*.3, ph=p0-uPar*.25;
-  float ca=cos(-.6), sa=sin(-.6); vec2 q=vec2(ca*p.x-sa*p.y,sa*p.x+ca*p.y)+vec2(uT*.02,0.);
-  vec2 q2=vec2(ca*ph.x-sa*ph.y,sa*ph.x+ca*ph.y)-vec2(uT*.014,uT*.004);
-  float streak=fbm(q*vec2(2.,5.)+uS,5), broad=fbm(p*2.6+uS+4.+vec2(0.,uT*.012),4);
-  float fine=pow(1.-abs(fbm(q*vec2(3.,12.)+uS*1.7,4)*2.-1.),2.), near=pow(1.-abs(fbm(q2*vec2(2.5,9.)+uS*2.3,4)*2.-1.),3.);
+  float ca=cos(-.6), sa=sin(-.6); vec2 q=vec2(ca*p.x-sa*p.y,sa*p.x+ca*p.y)+vec2(uT*.06,0.);
+  vec2 q2=vec2(ca*ph.x-sa*ph.y,sa*ph.x+ca*ph.y)-vec2(uT*.045,uT*.012);
+  float streak=fbm(q*vec2(2.,5.)+uS,5), broad=fbm(p*2.6+uS+4.+vec2(uT*.02,uT*.035),4);
+  float fine=pow(1.-abs(fbm(q*vec2(3.,12.)+uS*1.7+vec2(uT*.12,0.),4)*2.-1.),2.), near=pow(1.-abs(fbm(q2*vec2(2.5,9.)+uS*2.3,4)*2.-1.),3.);
   float lit=0.;
   for(int i=0;i<9;i++){ vec2 d=p-P[i]; float k=i==3?1.8:1.; lit+=S[i].z*k*(exp(-dot(d,d)*9.)*.8+exp(-length(d)*9.)*.35); }
   float dust=smoothstep(.3,.75,broad*.6+streak*.6);
-  C+=vec3(.3,.5,1.)*lit*(dust*(.6+.5*fine)+near*.25)*.5;
+  /* waves of brighter light run through the haze, as the dust moves into and out of the stars' light */
+  float swell=.8+.35*sin(uT*.35+dot(p,vec2(4.,2.5))+broad*6.);
+  C+=vec3(.3,.5,1.)*lit*(dust*(.6+.5*fine)+near*.25)*.5*swell;
   C+=vec3(.5,.66,1.)*lit*lit*.05;
   /* the stars: hot and blue-white, the brightest with the telescope's spikes */
   for(int i=0;i<9;i++){
-    vec2 d=p0-P[i]; float b=S[i].z*(.88+.12*sin(uT*2.3+float(i)*2.1)), r2=dot(d,d), r=sqrt(r2);
-    float spk=(exp(-abs(d.x)*420.)+exp(-abs(d.y)*420.))*exp(-r*(9.-5.*b))*b*b;
-    C+=vec3(.78,.87,1.)*b*(exp(-r2*9000.)*5.+exp(-r2*900.)*.9+exp(-r*22.)*.22)+vec3(.7,.82,1.)*spk*.9;
+    /* they twinkle: brightness and colour flicker, and the spikes reach out and draw back with them */
+    float fi=float(i), tw=sin(uT*2.3+fi*2.1)*.6+sin(uT*3.7+fi*5.3)*.4;
+    vec2 d=p0-P[i]; float b=S[i].z*(.84+.16*tw), r2=dot(d,d), r=sqrt(r2);
+    float spk=(exp(-abs(d.x)*420.)+exp(-abs(d.y)*420.))*exp(-r*(9.5-6.*b))*b*b;
+    C+=mix(vec3(.72,.84,1.),vec3(.95,.97,1.),.5+.5*sin(uT*3.1+fi*1.7))*b*(exp(-r2*9000.)*5.+exp(-r2*900.)*.9+exp(-r*22.)*.22)+vec3(.7,.82,1.)*spk*.9;
   }
   /* the fainter members, turning with the rest: sixty of them, each somewhere in the ball */
   for(int i=0;i<60;i++){
     float fi=float(i);
     vec3 x=(vec3(h12(vec2(fi,uS+1.)),h12(vec2(fi,uS+2.)),h12(vec2(fi,uS+3.)))-.5)*vec3(1.9,1.6,1.2);
-    vec2 d=p0-place(x,yaw,pitch); float hs=h12(vec2(fi,uS+4.));
+    float hs=h12(vec2(fi,uS+4.)), w=uT*(.04+.14*hs)*(hs>.5?1.:-1.), cw=cos(w), sw=sin(w);
+    x=vec3(cw*x.x+sw*x.z,x.y,-sw*x.x+cw*x.z);               /* each on its own orbit through the cluster */
+    vec2 d=p0-place(x,yaw,pitch);
     C+=vec3(.82,.88,1.)*exp(-dot(d,d)*(5000.+6000.*hs))*(.3+.7*hs)*(.75+.25*sin(uT*(1.3+hs*2.)+fi));
   }
   o=vec4(C*uA*edgeFade(),0.);
@@ -188,28 +194,52 @@ void main(){
    small dark knots of dust stud the inner edge of the ring. */
 void main(){
   vec2 p=vQ*1.25;
-  vec3 ax=normalize(vec3(uPar*1.1+vec2(.1,-.07)+.14*vec2(cos(uT*.045),sin(uT*.045)),1.)), u1=normalize(cross(vec3(0.,1.,0.),ax)), u2=cross(ax,u1);
+  vec3 ax=normalize(vec3(uPar*1.1+vec2(.1,-.07)+.22*vec2(cos(uT*.09),sin(uT*.09)),1.)), u1=normalize(cross(vec3(0.,1.,0.),ax)), u2=cross(ax,u1);
+  /* the barrel also spins round its own axis, carrying its knots and clumps round the ring */
+  float sp=uT*.07; vec3 v1=cos(sp)*u1+sin(sp)*u2, v2=-sin(sp)*u1+cos(sp)*u2;
   float rp=length(p/vec2(1.,.82)), ang=atan(p.y,p.x);
-  float fil=fbmA(ang,2.6,vec2(uS+uT*.052,uS),rp*9.-uT*.06,4);                 /* filaments, streaming outwards */
+  float fil=fbmA(ang,2.6,vec2(uS+uT*.06,uS),rp*9.-uT*.35,4);                  /* filaments, streaming outwards */
+  /* ripples of the wind from the star, running out through the gas every few seconds */
+  float wave=.5+.5*sin(rp*26.-uT*1.1+fil*4.);
   vec3 C=vec3(0.); float cov=0.;                                  /* cov: how much gas the ray went through */
   const int N=12;                                                 /* (light enough for a phone filling its screen with it) */
   for(int i=0;i<N;i++){
     float z=mix(-1.,1.,(float(i)+.5)/float(N));
     vec3 x=vec3(p,z);
-    float h=dot(x,ax); vec2 q=vec2(dot(x,u1),dot(x,u2)*1.2);
+    float h=dot(x,ax); vec2 q=vec2(dot(x,v1),dot(x,v2)*1.2);
+    vec3 xr=vec3(q,h);                                            /* the point in the turning barrel's own frame */
     float R3=length(vec3(q,h*.7));
     float shell=exp(-pow((R3-.6)/.12,2.)), waist=exp(-h*h*3.);
-    float n=vn3(x*5.+uS+vec3(uT*.02,-uT*.015,uT*.03));        /* the gas churns */
-    float kw=exp(-pow((R3-.53)/.06,2.)), knot=kw>.02?smoothstep(.72,.9,vn3(x*16.+uS*3.))*kw:0.;
-    float dens=(shell*(.28+1.15*waist)+exp(-pow((R3-.42)/.2,2.))*.18)*(.45+.8*n)*(.6+.8*fil)*(1.-.75*knot);
+    float n=vn3(xr*5.+uS+vec3(uT*.08,-uT*.06,uT*.11));          /* the gas churns */
+    float kw=exp(-pow((R3-.53)/.06,2.)), knot=kw>.02?smoothstep(.72,.9,vn3(xr*16.+uS*3.))*kw:0.;
+    float dens=(shell*(.28+1.15*waist)*(.85+.3*wave)+exp(-pow((R3-.42)/.2,2.))*.18)*(.45+.8*n)*(.6+.8*fil)*(1.-.75*knot);
     /* teal inside, then green-yellow, orange and red at the rim (going straight from teal to orange passed through grey) */
     vec3 col=mix(vec3(.16,.72,.86),vec3(.62,.92,.45),smoothstep(.36,.52,R3));
     col=mix(col,vec3(1.,.6,.2),smoothstep(.5,.62,R3)); col=mix(col,vec3(.95,.2,.3),smoothstep(.62,.74,R3));
     C+=col*dens*(2.2/12.); cov+=dens/12.;
   }
-  C+=vec3(.2,.7,.95)*exp(-rp*rp*7.)*.2;                           /* the thin glow filling it */
+  /* the fine detail a telescope shows: thin filaments streaming straight out of the star across the ring
+     (bright ridges, darker gaps between), and small dark knots of dust on its inner edge, each with its tail
+     pointing away from the star (40 cells round the ring: a whole number, so the cells meet at ±π) */
+  float ringZ=smoothstep(.3,.52,rp)*(1.-smoothstep(.82,1.02,rp));
+  float spoke=fbmA(ang,14.,vec2(uS*3.,uT*.03),rp*5.-uT*.35,3), fils=pow(1.-abs(spoke*2.-1.),3.);
+  float patchy=smoothstep(.35,.7,fbmA(ang,3.,vec2(uS*5.,0.),rp*2.-uT*.1,2));   /* in some places, not all round */
+  C*=1.+(fils*.75-.22)*ringZ*patchy;
+  /* (two scatters of cells, 37 and 61 round: each cell maybe a knot, anywhere in it, at its own distance
+     from the star and its own size; they turn with the barrel) */
+  float ak=mod(ang-sp+3.1415927,6.2831853), dark=0.;
+  for(int L=0;L<2;L++){
+    float nc=L==0?37.:61., cell=ak*nc/6.2831853, id=floor(cell);
+    float h1=h12(vec2(id,uS+float(L)*7.)), h2=h12(vec2(id,uS+float(L)*7.+3.)), h3=h12(vec2(id,uS+float(L)*7.+5.));
+    float r0=.43+.17*h2, sz=.012+.016*h3;
+    float dr=(rp-r0)/(sz*1.6+sz*4.*smoothstep(r0,r0+.1,rp));         /* a head, and a tail away from the star */
+    float da=(fract(cell)-.2-.6*h3)*6.2831853/nc*rp/(sz*.7);
+    dark=max(dark,step(.5,h1)*exp(-da*da-dr*dr)*(.5+.5*h2));
+  }
+  C*=1.-.55*dark;
+  C+=vec3(.2,.7,.95)*exp(-rp*rp*7.)*.2*(.8+.4*wave);              /* the thin glow filling it, rippling */
   C+=vec3(.85,.28,.35)*exp(-pow((rp-.98)/.2,2.))*.1*(.4+fil);     /* the faint outer halo */
-  C+=vec3(1.)*exp(-dot(p,p)*1500.)*1.6;                           /* the white dwarf left in the middle */
+  C+=vec3(1.)*exp(-dot(p,p)*1500.)*1.6*(.85+.15*sin(uT*1.7));       /* the white dwarf left in the middle */
   /* the gas hides what lies behind it, as much as there is of it: seen through (only added on top), the
      sky's band and its dark lanes ran straight across the nebula as a line */
   float a=clamp(cov*1.6+exp(-rp*rp*3.)*.35,0.,.92)*(1.-smoothstep(.95,1.25,rp));
