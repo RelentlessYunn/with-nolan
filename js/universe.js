@@ -201,7 +201,7 @@ const Universe=(function(){
      around its galaxy, which stays in the same place on the screen). With a mouse it
      also leans a little towards the pointer. Both fade out during flights. */
   let camR=[1,0,0, 0,1,0, 0,0,1];    /* the camera's axes in the world (columns) */
-  let orbitK=0, orbitAt="home";
+  let orbitK=0, orbitP=0, orbitAt="home";
   const ptr={x:0,y:0,tx:0,ty:0};
   const finePointer=matchMedia("(pointer:fine)").matches;
   if(finePointer&&!robot){
@@ -209,8 +209,11 @@ const Universe=(function(){
     document.addEventListener("mouseleave",()=>{ ptr.tx=0; ptr.ty=0; });
   }
   function steer(dt){
-    if(!fancy()){ orbitK=anim?0:1; if(!anim) orbitAt=scene; ptr.x=ptr.y=0; return; }
-    orbitK+=((anim?0:1)-orbitK)*Math.min(1,dt*(anim?3:.45));
+    if(!fancy()){ orbitK=orbitP=anim?0:1; if(!anim) orbitAt=scene; ptr.x=ptr.y=0; return; }
+    /* from the flight into the slow turn (and back): eased at both ends, so the camera's speed never jumps.
+       (A smooth approach that starts at full rate still gave a small jolt the moment a flight ended) */
+    orbitP=Math.max(0,Math.min(1,orbitP+(anim?-dt/1.5:dt/6)));
+    orbitK=orbitP*orbitP*orbitP*(orbitP*(orbitP*6-15)+10);
     if(!anim) orbitAt=scene;                             /* the new centre once there (the turn has faded by then) */
     const k=Math.min(1,dt*1.6);
     ptr.x+=(ptr.tx-ptr.x)*k; ptr.y+=(ptr.ty-ptr.y)*k;

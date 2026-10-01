@@ -351,7 +351,9 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const writes=[];
     const p=await open(b,{hash:"tasks",routes:fakeCloud(REC,mode,writes),before:FAKE_CONFIG});
     await p.locator("#generalTasks input").nth(2).check();
-    await p.waitForTimeout(5000);
+    /* waited for (the save, after however many retries), not timed: a slow machine must not fail it */
+    for(let w=0;w<60&&!((writes[writes.length-1]||{}).hechas||[]).includes("gk_2")&&((writes[writes.length-1]||{}).hechas||[]).length<3;w++) await p.waitForTimeout(250);
+    await p.waitForTimeout(300);
     const u=writes[writes.length-1]||{};
     ok(u.notas==="old notes"&&(u.hechas||[]).length===3&&u.grades&&u.grades["g_main_ed_parcial-1"]==="7",
       `first read ${mode}: nothing is lost and old ids are translated (${(u.hechas||[]).length} ticks)`);
@@ -361,7 +363,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const writes=[];
     const p=await open(b,{hash:"notes",routes:fakeCloud(REC,"fails",writes),before:FAKE_CONFIG});
     ok(await p.evaluate(()=>document.getElementById("notesText").readOnly),"notes cannot be typed until the saved ones arrive");
-    await p.waitForTimeout(3000);
+    /* (the first retry comes 2 s after the failure; waited for, not timed, so a slow machine does not fail it) */
+    await p.waitForFunction(()=>document.getElementById("notesText").value==="old notes",null,{timeout:9000}).catch(()=>{});
     ok(await p.inputValue("#notesText")==="old notes","after retrying the saved notes appear");
     await p.goto(PAGE+"#subjects"); await p.waitForTimeout(2500);
     const inp=p.locator('.g-input[data-scope=main][data-subj=ed]').nth(1);
@@ -383,8 +386,12 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const f=await p.evaluate(()=>({ro:document.getElementById("notesText").readOnly,ticks:document.querySelectorAll("#subjectTasks input:checked, #generalTasks input:checked").length,
       pops:window.__pops,on:document.querySelectorAll("#tasksConstellation .c-star.on").length,born:document.querySelectorAll("#tasksConstellation .c-star.fresh").length}));
     ok(!f.ro&&f.ticks===2&&!f.pops.length&&f.on===2&&!f.born,`then the fresh copy takes over: its ticks arrive without popping and no star is born by itself (${JSON.stringify(f)})`);
-    await p.locator("#generalTasks input:not(:checked)").first().check(); await p.waitForTimeout(100);
-    const u=await p.evaluate(()=>({pops:window.__pops.length,born:document.querySelectorAll("#tasksConstellation .c-star.fresh").length}));
+    /* the new star is only "fresh" for a moment: whether it ever was, noted as it happens */
+    await p.evaluate(()=>{ window.__born=0; const c=document.getElementById("tasksConstellation");
+      new MutationObserver(()=>{ window.__born=Math.max(window.__born,c.querySelectorAll(".c-star.fresh").length); }).observe(c,{subtree:true,childList:true,attributes:true}); });
+    await p.locator("#generalTasks input:not(:checked)").first().check();
+    await p.waitForFunction(()=>window.__pops.length>0&&window.__born>0,null,{timeout:4000}).catch(()=>{});
+    const u=await p.evaluate(()=>({pops:window.__pops.length,born:window.__born}));
     ok(u.pops===1&&u.born===1,`a tick of your own pops, and its star is born (${JSON.stringify(u)})`);
     await p.context().close();
   }
@@ -452,7 +459,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.waitForFunction(()=>getComputedStyle(document.querySelector("body > div.wrap")).opacity==="0",null,{timeout:3000}).catch(()=>{});
     const v=await p.evaluate(()=>({on:document.documentElement.classList.contains("viewing"),exit:!document.getElementById("viewExit").hidden,
       page:getComputedStyle(document.querySelector("body > div.wrap")).opacity,header:getComputedStyle(document.querySelector("header.top")).pointerEvents}));
-    await p.keyboard.press("Escape"); await p.waitForTimeout(800);
+    await p.keyboard.press("Escape");
+    await p.waitForFunction(()=>!document.documentElement.classList.contains("viewing")&&getComputedStyle(document.querySelector("body > div.wrap")).opacity==="1",null,{timeout:6000}).catch(()=>{});
     const back=await p.evaluate(()=>!document.documentElement.classList.contains("viewing")&&document.getElementById("viewExit").hidden
       &&getComputedStyle(document.querySelector("body > div.wrap")).opacity==="1"&&location.hash==="#subjects");
     ok(v.on&&v.exit&&v.page==="0"&&v.header==="none"&&back,`the eye button shows just the sky, and Escape brings everything back (${JSON.stringify(v)})`);
@@ -529,7 +537,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       &&r.files.join()==="demo.js",
       `the guest button opens the same site with a demo organizer: demo.js only (not Nolan's data or the cloud's key), nothing read from the cloud (${JSON.stringify(r)})`);
     await p.goto(PAGE+"#schedule");
-    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:3000}).catch(()=>{});   /* (home fades out: 280 ms, stretched under load) */
+    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:9000}).catch(()=>{});   /* (home fades out: 280 ms, stretched under load) */
     const app=await p.evaluate(()=>({hash:location.hash,brand:document.querySelector("header .brand").textContent,rows:document.querySelectorAll("#calbody .ev").length,
       ag:getComputedStyle(document.querySelector(".ag-btn")).display,portal:document.getElementById("portal").hidden}));
     const routes={};

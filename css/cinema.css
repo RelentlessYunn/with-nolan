@@ -274,15 +274,20 @@ button.icon,button.p-tool{padding:0;font:inherit}
 /* ---------- "Skip intro": only while the opening plays (the flight in, the logo drawing itself) ---------- */
 .skip-intro{
   position:fixed;z-index:1100;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
-  display:none;align-items:center;gap:8px;padding:10px 20px 10px 22px;border-radius:99px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;padding:10px 20px 10px 22px;border-radius:99px;cursor:pointer;
   font:inherit;font-size:.84rem;font-weight:700;letter-spacing:.02em;color:#fff;
   background:rgba(10,12,18,.55);border:1px solid rgba(255,255,255,.22);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  animation:fade-in .6s .8s ease backwards;transition:background .2s ease,transform .15s var(--spring);
+  /* hidden: faded out (not taken away at once), and then out of the way of taps */
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .7s ease,visibility 0s linear .7s,background .2s ease,transform .15s var(--spring);
 }
 .skip-intro::after{content:"›";font-size:1.15rem;line-height:1;margin-top:-2px}
-html.flying .skip-intro,html.launching .skip-intro,html.intro-on .skip-intro{display:inline-flex}
-html[data-locked]:not(.flying) .skip-intro{display:none}
+html.flying .skip-intro,html.launching .skip-intro,html.intro-on .skip-intro{
+  opacity:1;visibility:visible;pointer-events:auto;
+  transition:opacity .6s ease .5s,visibility 0s,background .2s ease,transform .15s var(--spring);
+}
+html[data-locked]:not(.flying) .skip-intro{opacity:0;visibility:hidden;pointer-events:none}
 @media (hover:hover){.skip-intro:hover{background:rgba(255,255,255,.16)}}
 .skip-intro:active{transform:translateX(-50%) scale(.95)}
 /* the version on the entry screen, small at its foot */
